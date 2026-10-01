@@ -4,7 +4,6 @@ yarn-debug.log*
 yarn-error.log*
 .env
 *.env
-config.js
 .DS_Store
 Thumbs.db
 *.log
