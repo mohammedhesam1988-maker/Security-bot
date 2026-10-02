@@ -1,14 +1,14 @@
-// ==================== LEVEL SYSTEM HANDLER ====================
+const fs = require('fs');
+const path = require('path');
+const { EmbedBuilder } = require('discord.js');
 
 const userCooldowns = new Map();
 
 // ==================== GET USER DATA ====================
 async function getUserData(userId, guildId) {
     try {
-        const fs = require('fs');
-        const path = require('path');
         const dataPath = path.join(__dirname, '..', 'data', 'levels.json');
-
+        
         if (!fs.existsSync(path.join(__dirname, '..', 'data'))) {
             fs.mkdirSync(path.join(__dirname, '..', 'data'));
         }
@@ -34,12 +34,10 @@ async function getUserData(userId, guildId) {
 // ==================== SAVE USER DATA ====================
 async function saveUserData(userId, guildId, userData) {
     try {
-        const fs = require('fs');
-        const path = require('path');
         const dataPath = path.join(__dirname, '..', 'data', 'levels.json');
-
         const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
         const key = `${guildId}-${userId}`;
+        
         data[key] = userData;
         fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
     } catch (e) {
@@ -49,7 +47,6 @@ async function saveUserData(userId, guildId, userData) {
 
 // ==================== GET XP FOR LEVEL ====================
 function getXPForLevel(level) {
-    // فۆرمۆلا: 5 * (level^2) + 50 * level + 100
     return 5 * (level * level) + 50 * level + 100;
 }
 
@@ -59,10 +56,10 @@ async function addXP(member, message, config) {
         if (!config.levels || !config.levels.enabled) return;
         if (member.user.bot) return;
 
-        // پشکنینی کەناڵە قەدەغەکراوەکان
+        // پشکنینی چانێلە ڕەشەکان
         if (config.levels.blacklistedChannels && config.levels.blacklistedChannels.includes(message.channel.id)) return;
 
-        // پشکنینی ڕۆڵە قەدەغەکراوەکان
+        // پشکنینی ڕۆڵە ڕەشەکان
         if (config.levels.blacklistedRoles && config.levels.blacklistedRoles.length > 0) {
             if (member.roles.cache.some(r => config.levels.blacklistedRoles.includes(r.id))) return;
         }
@@ -70,7 +67,7 @@ async function addXP(member, message, config) {
         // پشکنینی بەکارهێنەرە پشتگوێخراوەکان
         if (config.levels.ignoredUsers && config.levels.ignoredUsers.includes(member.id)) return;
 
-        // پشکنینی کۆداون
+        // کۆداون
         const key = `${member.guild.id}-${member.id}`;
         const now = Date.now();
         const cooldown = config.levels.cooldown || 60000;
@@ -80,15 +77,15 @@ async function addXP(member, message, config) {
         }
         userCooldowns.set(key, now);
 
-        // وەرگرتنی داتای بەکارهێنەر
+        // وەرگرتنی داتا
         const userData = await getUserData(member.id, member.guild.id);
 
-        // دیاریکردنی XP
+        // زیادکردنی XP
         const xpMin = config.levels.xpPerMessage?.min || 15;
         const xpMax = config.levels.xpPerMessage?.max || 25;
         let xpToAdd = Math.floor(Math.random() * (xpMax - xpMin + 1)) + xpMin;
 
-        // پشکنینی XP Multiplier
+        // زیادکردنی XP بۆ ڕۆڵەکان
         if (config.levels.xpMultiplier) {
             for (const [roleId, multiplier] of Object.entries(config.levels.xpMultiplier)) {
                 if (member.roles.cache.has(roleId)) {
@@ -102,7 +99,7 @@ async function addXP(member, message, config) {
         userData.xp += xpToAdd;
         userData.messages += 1;
 
-        // پشکنینی ئاست بەرزبوونەوە
+        // پشکنینی بەرزبوونەوە
         const requiredXP = getXPForLevel(userData.level + 1);
 
         if (userData.xp >= requiredXP) {
@@ -114,7 +111,6 @@ async function addXP(member, message, config) {
 
         // پاشەکەوتکردنی داتا
         await saveUserData(member.id, member.guild.id, userData);
-
     } catch (e) {
         console.error(`addXP Error: ${e.message}`);
     }
@@ -123,43 +119,36 @@ async function addXP(member, message, config) {
 // ==================== HANDLE LEVEL UP ====================
 async function handleLevelUp(member, level, config) {
     try {
-        const { EmbedBuilder } = require('discord.js');
+        const channelId = config.levels.levelUpChannel;
+        const channel = channelId ? member.guild.channels.cache.get(channelId) : null;
 
-        // ناردنی نامەی ئاست بەرزبوونەوە
-        if (config.levels.levelUpMessage) {
-            let message = config.levels.levelUpMessage
-                .replace(/%member_mention%/g, `<@${member.id}>`)
-                .replace(/%member_name%/g, member.user.username)
-                .replace(/%member_tag%/g, member.user.tag)
-                .replace(/%level%/g, level)
-                .replace(/%server_name%/g, member.guild.name);
+        const message = config.levels.levelUpMessage
+            ?.replace(/{user}/g, member.user.tag)
+            .replace(/{userMention}/g, `<@${member.id}>`)
+            .replace(/{level}/g, level)
+            .replace(/{server}/g, member.guild.name);
 
-            // دیاریکردنی کەناڵ
-            const channelId = config.levels.levelUpChannel;
-            const channel = channelId ? member.guild.channels.cache.get(channelId) : null;
+        if (config.levels.levelUpEmbed) {
+            const embed = new EmbedBuilder()
+                .setColor(config.levels.levelUpColor || '#57F287')
+                .setTitle(`🎉 Level Up!`)
+                .setDescription(message)
+                .setTimestamp();
 
-            if (config.levels.levelUpEmbed) {
-                const embed = new EmbedBuilder()
-                    .setColor(config.levels.levelUpColor || '#57F287')
-                    .setTitle('🎉 Level Up!')
-                    .setDescription(message)
-                    .setTimestamp();
-
-                if (channel) {
-                    await channel.send({ embeds: [embed] }).catch(() => {});
-                } else {
-                    await member.send({ embeds: [embed] }).catch(() => {});
-                }
+            if (channel) {
+                await channel.send({ embeds: [embed] }).catch(() => {});
             } else {
-                if (channel) {
-                    await channel.send({ content: message }).catch(() => {});
-                } else {
-                    await member.send({ content: message }).catch(() => {});
-                }
+                await member.send({ embeds: [embed] }).catch(() => {});
+            }
+        } else {
+            if (channel) {
+                await channel.send({ content: message }).catch(() => {});
+            } else {
+                await member.send({ content: message }).catch(() => {});
             }
         }
 
-        // دانانی ڕۆڵ بۆ ئاست
+        // زیادکردنی ڕۆڵ
         if (config.levels.roles && config.levels.roles[level]) {
             const roleId = config.levels.roles[level];
             const role = member.guild.roles.cache.get(roleId);
@@ -168,12 +157,11 @@ async function handleLevelUp(member, level, config) {
             }
         }
 
-        // ناردنی DM
+        // پەیامی DM
         if (config.levels.announceInDM) {
             const dmMessage = `🎉 Congratulations! You have reached **Level ${level}** in **${member.guild.name}**!`;
             await member.send({ content: dmMessage }).catch(() => {});
         }
-
     } catch (e) {
         console.error(`handleLevelUp Error: ${e.message}`);
     }
@@ -182,23 +170,22 @@ async function handleLevelUp(member, level, config) {
 // ==================== GET LEADERBOARD ====================
 async function getLeaderboard(guildId, limit = 10) {
     try {
-        const fs = require('fs');
-        const path = require('path');
         const dataPath = path.join(__dirname, '..', 'data', 'levels.json');
-
+        
         if (!fs.existsSync(dataPath)) return [];
 
         const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
         const users = [];
 
         for (const [key, userData] of Object.entries(data)) {
-            if (key.startsWith(guildId + '-')) {
+            if (key.startsWith(`${guildId}-`)) {
                 const userId = key.split('-')[1];
                 users.push({ userId, ...userData });
             }
         }
 
         users.sort((a, b) => b.level - a.level || b.xp - a.xp);
+
         return users.slice(0, limit);
     } catch (e) {
         console.error(`getLeaderboard Error: ${e.message}`);

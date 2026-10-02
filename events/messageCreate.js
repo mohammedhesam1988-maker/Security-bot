@@ -1,6 +1,7 @@
-const { checkSpam, checkInvites, checkLinks, checkPhishing, checkBannedWords, checkCaps, checkEmoji, checkMentions, checkDuplicates, checkZalgo, checkCharRepeat, checkPersonalInfo, checkMassMention } = require('../handlers/antiSpam');
 const { logMessage } = require('../handlers/logger');
+const { checkSpam, checkInvites, checkLinks, checkPhishing, checkBannedWords, checkCaps, checkEmoji, checkMentions, checkDuplicates, checkZalgo, checkCharRepeat, checkPersonalInfo, checkMassMention } = require('../handlers/antiSpam');
 const { addXP } = require('../handlers/levelSystem');
+const { Level } = require('../models.js');
 
 const dmCooldown = new Map();
 
@@ -8,8 +9,10 @@ module.exports = {
     name: 'messageCreate',
     once: false,
     async execute(message, client, config) {
+        // ==================== پشکنینی بۆت ====================
         if (message.author.bot) return;
 
+        // ==================== پشکنینی DM ====================
         if (!message.guild) {
             const now = Date.now();
             const cd = dmCooldown.get(message.author.id);
@@ -20,6 +23,7 @@ module.exports = {
             return;
         }
 
+        // ==================== پشکنینی Whitelist ====================
         if (config.whitelist && config.whitelist.users && config.whitelist.users.all) {
             if (config.whitelist.users.all.includes(message.author.id)) return;
         }
@@ -27,6 +31,7 @@ module.exports = {
             if (message.member.roles.cache.some(r => config.whitelist.roles.all.includes(r.id))) return;
         }
 
+        // ==================== پشکنینی Anti-Spam ====================
         if (await checkSpam(message, config)) return;
         if (await checkInvites(message, config)) return;
         if (await checkLinks(message, config)) return;
@@ -41,6 +46,7 @@ module.exports = {
         if (await checkPersonalInfo(message, config)) return;
         if (await checkMassMention(message, config)) return;
 
+        // ==================== پشکنینی فەرمانەکان (Prefix) ====================
         if (config.prefix && message.content.startsWith(config.prefix)) {
             const args = message.content.slice(config.prefix.length).trim().split(/ +/);
             const commandName = args.shift().toLowerCase();
@@ -56,6 +62,7 @@ module.exports = {
                 if (cmdSettings.disabledRoles && cmdSettings.disabledRoles.length > 0) {
                     if (message.member.roles.cache.some(r => cmdSettings.disabledRoles.includes(r.id))) return;
                 }
+
                 if (cmdSettings.enabledChannels && cmdSettings.enabledChannels.length > 0) {
                     if (!cmdSettings.enabledChannels.includes(message.channel.id)) return;
                 }
@@ -69,6 +76,7 @@ module.exports = {
             }
         }
 
+        // ==================== تۆمارکردنی پەیام (Logs) ====================
         if (config.logChannels && config.logChannels.general) {
             try {
                 await logMessage(message, 'create');
@@ -77,11 +85,11 @@ module.exports = {
             }
         }
 
-        // ==================== LEVEL SYSTEM ====================
+        // ==================== سیستەمی ئاست (Levels) ====================
         try {
             await addXP(message.member, message, config);
-        } catch (e) {
-            console.error(`Level System Error: ${e.message}`);
+        } catch (error) {
+            console.error(`Level System Error: ${error.message}`);
         }
     }
 };

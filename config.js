@@ -494,7 +494,8 @@ token: process.env.TOKEN || '',
             "enabled": true,
             "max": 5,
             "punishment": "kick"
-        }
+        },
+        "enabled": true
     },
     "verification": {
         "enabled": false,

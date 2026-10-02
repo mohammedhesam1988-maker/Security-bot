@@ -105,7 +105,7 @@ app.get('/api/analytics/stats', (req, res) => {
         channels: guild.channels.cache.size,
         roles: guild.roles.cache.size,
         emojis: guild.emojis.cache.size,
-        boostLevel: guild.premiumTier,
+        boosters: guild.premiumSubscriptionCount,
         boostCount: guild.premiumSubscriptionCount,
         createdAt: guild.createdTimestamp,
         ownerId: guild.ownerId
@@ -143,8 +143,8 @@ app.post('/api/whitelist/remove', (req, res) => {
 
 // ==================== ANTI-SPAM ====================
 app.get('/api/antispam', (req, res) => {
-    if (!botConfig || !botConfig.autoMod) return res.json({});
-    res.json(botConfig.autoMod);
+    if (!botConfig) return res.json({});
+    res.json(botConfig.autoMod || {});
 });
 
 app.post('/api/antispam/update', (req, res) => {
@@ -160,13 +160,13 @@ app.post('/api/antispam/update', (req, res) => {
 // ==================== ANTI-NUKE ====================
 app.get('/api/antinuke/config', (req, res) => {
     if (!botConfig) return res.json({});
-    res.json(botConfig.securityLimits);
+    res.json(botConfig.securityLimits || {});
 });
 
 app.post('/api/antinuke/update', (req, res) => {
     if (!botConfig) return res.status(500).json({ error: 'Bot not ready' });
     const { action, field, value } = req.body;
-    if (botConfig.securityLimits[action]) {
+    if (botConfig.securityLimits && botConfig.securityLimits[action]) {
         botConfig.securityLimits[action][field] = value;
         saveConfig();
         return res.json({ success: true });
@@ -175,20 +175,18 @@ app.post('/api/antinuke/update', (req, res) => {
 });
 
 // ==================== ROLE LIMITS ====================
-app.get('/api/rolelimits/config', (req, res) => {
+app.get('/api/rolelimits', (req, res) => {
     if (!botConfig) return res.json({});
     res.json(botConfig.roleLimits || {});
 });
 
 app.post('/api/rolelimits/update', (req, res) => {
     if (!botConfig) return res.status(500).json({ error: 'Bot not ready' });
-    const { action, field, value } = req.body;
-    if (botConfig.roleLimits && botConfig.roleLimits[action]) {
-        botConfig.roleLimits[action][field] = value;
-        saveConfig();
-        return res.json({ success: true });
-    }
-    res.status(400).json({ error: 'Action not found' });
+    const { field, value } = req.body;
+    if (!botConfig.roleLimits) botConfig.roleLimits = {};
+    botConfig.roleLimits[field] = value;
+    saveConfig();
+    res.json({ success: true });
 });
 
 // ==================== BEAST MODE ====================

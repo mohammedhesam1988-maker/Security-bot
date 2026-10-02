@@ -1,31 +1,58 @@
 const { EmbedBuilder } = require('discord.js');
 
 // ==================== خاڵبەندی بۆ هەر ئەندام ====================
-const actionTrackers = new Map();
-
-// ==================== وەرگرتنی خاڵبەند ====================
-function getTracker(guildId, userId, action) {
-    const key = `${guildId}-${userId}-${action}`;
-    if (!actionTrackers.has(key)) actionTrackers.set(key, []);
-    return actionTrackers.get(key);
-}
+const beastTrackers = new Map();
 
 // ==================== پشکنینی لیستی سپی ====================
 function isWhitelisted(member, config) {
     if (!member) return false;
-
-    // پشکنینی خاوەن سێرڤەر
     if (member.id === member.guild.ownerId) return true;
-
-    // پشکنینی لیستی سپی بەکارهێنەران
     if (config.whitelist?.users?.all?.includes(member.id)) return true;
-
-    // پشکنینی لیستی سپی ڕۆڵەکان
     if (config.whitelist?.roles?.all) {
         if (member.roles.cache.some(r => config.whitelist.roles.all.includes(r.id))) return true;
     }
-
     return false;
+}
+
+// ==================== پشکنینی چالاکی ====================
+async function checkBeast(guild, userId, action, config) {
+    try {
+        if (!config.beastMode || !config.beastMode.enabled) return false;
+        if (!config.beastMode.actions || !config.beastMode.actions[action]) return false;
+
+        const settings = config.beastMode.actions[action];
+        if (!settings.enabled) return false;
+
+        const member = await guild.members.fetch(userId).catch(() => null);
+        if (isWhitelisted(member, config)) return false;
+
+        // خاڵبەندی
+        const key = `${guild.id}-${userId}-${action}`;
+        if (!beastTrackers.has(key)) beastTrackers.set(key, []);
+        const tracker = beastTrackers.get(key);
+        const now = Date.now();
+        tracker.push(now);
+
+        // پاککردنەوەی چالاکییە کۆنەکان (کۆنتر لە ١٠ چرکە)
+        const window = 10000;
+        const validActions = tracker.filter(t => now - t < window);
+        beastTrackers.set(key, validActions);
+
+        // سنووری سزا
+        const max = settings.max || 3;
+
+        if (validActions.length >= max) {
+            const punishment = settings.punishment || 'ban';
+            await punish(guild, userId, punishment, `Beast Mode: ${action}`);
+            beastTrackers.set(key, []);
+            return true;
+        }
+
+        return false;
+    } catch (e) {
+        console.error(`checkBeast Error: ${e.message}`);
+        return false;
+    }
 }
 
 // ==================== سزادان ====================
@@ -34,11 +61,9 @@ async function punish(guild, userId, punishment, reason) {
         const member = await guild.members.fetch(userId).catch(() => null);
         if (!member) return;
 
-        // پشکنینی دەسەڵات
         if (member.id === guild.ownerId) return;
         if (member.roles.highest.position >= guild.members.me.roles.highest.position) return;
 
-        // جێبەجێکردنی سزا
         if (punishment === 'kick' && member.kickable) {
             await member.kick(reason).catch(() => {});
         } else if (punishment === 'ban' && member.bannable) {
@@ -56,8 +81,8 @@ async function punish(guild, userId, punishment, reason) {
 
         if (logChannel) {
             const embed = new EmbedBuilder()
-                .setColor('#ED4245')
-                .setTitle('🚨 چالاکی گوماناویی')
+                .setColor('#FF0000')
+                .setTitle('🔥 Beast Mode: سزادان')
                 .setDescription(
                     `**ئەندام:** <@${userId}>\n` +
                     `**ناو:** ${member.user.tag}\n` +
@@ -73,46 +98,8 @@ async function punish(guild, userId, punishment, reason) {
     }
 }
 
-// ==================== پشکنینی چالاکی ====================
-async function checkAction(guild, userId, action, config) {
-    try {
-        if (!config.securityLimits || !config.securityLimits[action]) return false;
-
-        const settings = config.securityLimits[action];
-        if (!settings.enabled) return false;
-
-        const member = await guild.members.fetch(userId).catch(() => null);
-        if (isWhitelisted(member, config)) return false;
-
-        // خاڵبەندی
-        const tracker = getTracker(guild.id, userId, action);
-        const now = Date.now();
-        tracker.push(now);
-
-        // پاککردنەوەی چالاکییە کۆنەکان (کۆنتر لە ١٠ چرکە)
-        const window = 10000;
-        const validActions = tracker.filter(t => now - t < window);
-        actionTrackers.set(`${guild.id}-${userId}-${action}`, validActions);
-
-        // سنووری سزا
-        const max = settings.max || 5;
-
-        if (validActions.length >= max) {
-            const punishment = settings.punishment || 'kick';
-            await punish(guild, userId, punishment, `Anti-Nuke: ${action}`);
-            actionTrackers.set(`${guild.id}-${userId}-${action}`, []);
-            return true;
-        }
-
-        return false;
-    } catch (e) {
-        console.error(`checkAction Error: ${e.message}`);
-        return false;
-    }
-}
-
 module.exports = {
-    checkAction,
-    isWhitelisted,
-    punish
+    checkBeast,
+    punish,
+    isWhitelisted
 };
