@@ -1,3 +1,5 @@
+const { Giveaway, Settings } = require('../models.js');
+
 module.exports = {
     name: 'interactionCreate',
     once: false,
@@ -40,7 +42,7 @@ module.exports = {
 
                 if (cmdSettings.maxLimit && cmdSettings.maxLimit > 0) {
                     if (!client.commandUsage) client.commandUsage = new Map();
-                    const key = `${interaction.guild.id}-${interaction.user.id}-${interaction.commandName}`;
+                    const key = `${interaction.user.id}-${interaction.commandName}`;
                     const usage = client.commandUsage.get(key) || 0;
 
                     if (usage >= cmdSettings.maxLimit) {
@@ -54,7 +56,7 @@ module.exports = {
                 await command.execute(interaction, client, config);
             } catch (error) {
                 console.error(`Command Error (${interaction.commandName}): ${error.message}`);
-                if (!interaction.replied && !interaction.deferred) {
+                if (interaction.replied && interaction.deferred) {
                     await interaction.reply({ content: '❌ There was an error while executing this command.', ephemeral: true }).catch(() => {});
                 }
             }
@@ -85,6 +87,37 @@ module.exports = {
                     const { closeTicket } = require('../handlers/ticketSystem');
                     await closeTicket(interaction, config);
                 }
+
+                // ==================== GIVEAWAY JOIN ====================
+                if (customId === 'giveaway_join') {
+                    const giveaway = await Giveaway.findOne({
+                        guildId: interaction.guild.id,
+                        messageId: interaction.message.id,
+                        ended: false
+                    });
+
+                    if (!giveaway) {
+                        return interaction.reply({
+                            content: '❌ خەڵاتکردنەکە کۆتاییهاتووە.',
+                            ephemeral: true
+                        }).catch(() => {});
+                    }
+
+                    if (giveaway.participants.includes(interaction.user.id)) {
+                        return interaction.reply({
+                            content: '❌ تۆ پێشتر بەشداریت کردووە!',
+                            ephemeral: true
+                        }).catch(() => {});
+                    }
+
+                    giveaway.participants.push(interaction.user.id);
+                    await giveaway.save();
+
+                    await interaction.reply({
+                        content: '✅ بە سەرکەوتوویی بەشداریت کرد!',
+                        ephemeral: true
+                    }).catch(() => {});
+                }
             } catch (error) {
                 console.error(`Button Error: ${error.message}`);
             }
@@ -95,9 +128,11 @@ module.exports = {
             try {
                 const customId = interaction.customId;
 
+                // ==================== REACTION ROLES ====================
                 if (customId.startsWith('reactionrole_')) {
                     const roleId = interaction.values[0];
                     const role = interaction.guild.roles.cache.get(roleId);
+
                     if (role) {
                         if (interaction.member.roles.cache.has(roleId)) {
                             await interaction.member.roles.remove(role).catch(() => {});
@@ -107,6 +142,30 @@ module.exports = {
                             await interaction.reply({ content: `✅ Added role: ${role.name}`, ephemeral: true }).catch(() => {});
                         }
                     }
+                }
+
+                // ==================== COLOR ROLES ====================
+                if (customId === 'colorrole_select') {
+                    const roleId = interaction.values[0];
+                    const role = interaction.guild.roles.cache.get(roleId);
+
+                    if (!role) {
+                        return interaction.reply({ content: '❌ ڕۆڵەکە نەدۆزرایەوە.', ephemeral: true }).catch(() => {});
+                    }
+
+                    const settings = await Settings.findOne({ guildId: interaction.guild.id });
+                    const existingRoles = Object.values(settings?.colorRoles?.roles || {});
+
+                    // سڕینەوەی ڕۆڵەکانی پێشوو
+                    for (const existingRoleId of existingRoles) {
+                        if (interaction.member.roles.cache.has(existingRoleId)) {
+                            await interaction.member.roles.remove(existingRoleId).catch(() => {});
+                        }
+                    }
+
+                    // زیادکردنی ڕۆڵی نوێ
+                    await interaction.member.roles.add(role).catch(() => {});
+                    await interaction.reply({ content: `✅ ڕەنگەکەت گۆڕدرا بۆ: **${role.name}**`, ephemeral: true }).catch(() => {});
                 }
             } catch (error) {
                 console.error(`Select Menu Error: ${error.message}`);

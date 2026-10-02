@@ -144,6 +144,35 @@ const Giveaway = mongoose.model('Giveaway', giveawaySchema);
 const AntiNukeConfig = mongoose.model('AntiNukeConfig', antiNukeConfigSchema);
 const LogConfig = mongoose.model('LogConfig', logConfigSchema);
 
+// ==================== Settings (ڕێکخستنەکان) ====================
+const settingsSchema = new mongoose.Schema({
+    guildId: { type: String, required: true, unique: true },
+    games: {
+        enabled: { type: Boolean, default: true },
+        channelId: { type: String, default: null }, // <--- ئەمە زیاد بکە
+        trivia: { type: Boolean, default: true },
+        wordle: { type: Boolean, default: true },
+        truthordare: { type: Boolean, default: true },
+        wouldyourather: { type: Boolean, default: true },
+        showCorrectAnswer: { type: Boolean, default: true }, // <--- ئەمە زیاد بکە
+        showWrongAnswer: { type: Boolean, default: true }  // <--- ئەمە زیاد بکە
+    },
+    announcements: {
+        enabled: { type: Boolean, default: true },
+        channelId: { type: String, default: null },
+        mentionEveryone: { type: Boolean, default: false },
+        useEmbed: { type: Boolean, default: true },
+        color: { type: String, default: '#fbbf24' }
+    },
+    moderation: {
+        enabled: { type: Boolean, default: true },
+        logChannelId: { type: String, default: null },
+        muteRoleId: { type: String, default: null }
+    }
+});
+
+const Settings = mongoose.model('Settings', settingsSchema);
+
 module.exports = {
     Action,
     Warning,
@@ -156,5 +185,6 @@ module.exports = {
     ReactionRole,
     Giveaway,
     AntiNukeConfig,
-    LogConfig
+    LogConfig,
+    Settings,
 };
