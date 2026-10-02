@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 const { Giveaway, Settings } = require('../models.js');
 
-=======
->>>>>>> origin/main
 module.exports = {
     name: 'interactionCreate',
     once: false,
@@ -45,11 +42,7 @@ module.exports = {
 
                 if (cmdSettings.maxLimit && cmdSettings.maxLimit > 0) {
                     if (!client.commandUsage) client.commandUsage = new Map();
-<<<<<<< HEAD
                     const key = `${interaction.user.id}-${interaction.commandName}`;
-=======
-                    const key = `${interaction.guild.id}-${interaction.user.id}-${interaction.commandName}`;
->>>>>>> origin/main
                     const usage = client.commandUsage.get(key) || 0;
 
                     if (usage >= cmdSettings.maxLimit) {
@@ -63,11 +56,7 @@ module.exports = {
                 await command.execute(interaction, client, config);
             } catch (error) {
                 console.error(`Command Error (${interaction.commandName}): ${error.message}`);
-<<<<<<< HEAD
                 if (interaction.replied && interaction.deferred) {
-=======
-                if (!interaction.replied && !interaction.deferred) {
->>>>>>> origin/main
                     await interaction.reply({ content: '❌ There was an error while executing this command.', ephemeral: true }).catch(() => {});
                 }
             }
@@ -98,7 +87,6 @@ module.exports = {
                     const { closeTicket } = require('../handlers/ticketSystem');
                     await closeTicket(interaction, config);
                 }
-<<<<<<< HEAD
 
                 // ==================== GIVEAWAY JOIN ====================
                 if (customId === 'giveaway_join') {
@@ -130,8 +118,6 @@ module.exports = {
                         ephemeral: true
                     }).catch(() => {});
                 }
-=======
->>>>>>> origin/main
             } catch (error) {
                 console.error(`Button Error: ${error.message}`);
             }
@@ -142,17 +128,11 @@ module.exports = {
             try {
                 const customId = interaction.customId;
 
-<<<<<<< HEAD
                 // ==================== REACTION ROLES ====================
                 if (customId.startsWith('reactionrole_')) {
                     const roleId = interaction.values[0];
                     const role = interaction.guild.roles.cache.get(roleId);
 
-=======
-                if (customId.startsWith('reactionrole_')) {
-                    const roleId = interaction.values[0];
-                    const role = interaction.guild.roles.cache.get(roleId);
->>>>>>> origin/main
                     if (role) {
                         if (interaction.member.roles.cache.has(roleId)) {
                             await interaction.member.roles.remove(role).catch(() => {});
@@ -163,7 +143,6 @@ module.exports = {
                         }
                     }
                 }
-<<<<<<< HEAD
 
                 // ==================== COLOR ROLES ====================
                 if (customId === 'colorrole_select') {
@@ -177,19 +156,15 @@ module.exports = {
                     const settings = await Settings.findOne({ guildId: interaction.guild.id });
                     const existingRoles = Object.values(settings?.colorRoles?.roles || {});
 
-                    // سڕینەوەی ڕۆڵەکانی پێشوو
                     for (const existingRoleId of existingRoles) {
                         if (interaction.member.roles.cache.has(existingRoleId)) {
                             await interaction.member.roles.remove(existingRoleId).catch(() => {});
                         }
                     }
 
-                    // زیادکردنی ڕۆڵی نوێ
                     await interaction.member.roles.add(role).catch(() => {});
                     await interaction.reply({ content: `✅ ڕەنگەکەت گۆڕدرا بۆ: **${role.name}**`, ephemeral: true }).catch(() => {});
                 }
-=======
->>>>>>> origin/main
             } catch (error) {
                 console.error(`Select Menu Error: ${error.message}`);
             }

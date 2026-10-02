@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// ==================== Action (کردارەکان) ====================
+// ==================== Action (چالاکی) ====================
 const actionSchema = new mongoose.Schema({
     guildId: String,
     userId: String,
@@ -9,7 +9,7 @@ const actionSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now }
 });
 
-// ==================== Warning (وارنەکان) ====================
+// ==================== Warning (ئاگاداری) ====================
 const warningSchema = new mongoose.Schema({
     guildId: String,
     userId: String,
@@ -75,7 +75,7 @@ const welcomeSchema = new mongoose.Schema({
     enabled: { type: Boolean, default: true }
 });
 
-// ==================== Ticket (تیکێت) ====================
+// ==================== Ticket (تیکت) ====================
 const ticketSchema = new mongoose.Schema({
     guildId: String,
     channelId: String,
@@ -89,7 +89,7 @@ const ticketSchema = new mongoose.Schema({
     transcript: String
 });
 
-// ==================== ReactionRole (ڕۆڵ بە ڕیاکشن) ====================
+// ==================== ReactionRole (ڕۆڵی کاردانەوە) ====================
 const reactionRoleSchema = new mongoose.Schema({
     guildId: String,
     messageId: String,
@@ -99,7 +99,7 @@ const reactionRoleSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-// ==================== Giveaway (خەڵات) ====================
+// ==================== Giveaway (خەڵاتکردن) ====================
 const giveawaySchema = new mongoose.Schema({
     guildId: String,
     channelId: String,
@@ -107,21 +107,21 @@ const giveawaySchema = new mongoose.Schema({
     hostId: String,
     prize: String,
     winners: { type: Number, default: 1 },
-    endsAt: Date,
+    endAt: Date,
     ended: { type: Boolean, default: false },
     participants: [String],
-    winnerIds: [String],
+    winnersList: [String],
     createdAt: { type: Date, default: Date.now }
 });
 
-// ==================== AntiNukeConfig (ڕێکخستنی دژە-نیوک) ====================
+// ==================== AntiNukeConfig (ڕێکخستنی دژە تێکدان) ====================
 const antiNukeConfigSchema = new mongoose.Schema({
     guildId: String,
     config: { type: Object, default: {} },
     updatedAt: { type: Date, default: Date.now }
 });
 
-// ==================== LogConfig (ڕێکخستنی لۆگ) ====================
+// ==================== LogConfig (ڕێکخستنی تۆمار) ====================
 const logConfigSchema = new mongoose.Schema({
     guildId: String,
     logChannelId: String,
@@ -144,19 +144,18 @@ const Giveaway = mongoose.model('Giveaway', giveawaySchema);
 const AntiNukeConfig = mongoose.model('AntiNukeConfig', antiNukeConfigSchema);
 const LogConfig = mongoose.model('LogConfig', logConfigSchema);
 
-<<<<<<< HEAD
 // ==================== Settings (ڕێکخستنەکان) ====================
 const settingsSchema = new mongoose.Schema({
     guildId: { type: String, required: true, unique: true },
     games: {
         enabled: { type: Boolean, default: true },
-        channelId: { type: String, default: null }, // <--- ئەمە زیاد بکە
+        channelId: { type: String, default: null },
         trivia: { type: Boolean, default: true },
         wordle: { type: Boolean, default: true },
         truthordare: { type: Boolean, default: true },
         wouldyourather: { type: Boolean, default: true },
-        showCorrectAnswer: { type: Boolean, default: true }, // <--- ئەمە زیاد بکە
-        showWrongAnswer: { type: Boolean, default: true }  // <--- ئەمە زیاد بکە
+        showCorrectAnswer: { type: Boolean, default: true },
+        showWrongAnswer: { type: Boolean, default: true }
     },
     announcements: {
         enabled: { type: Boolean, default: true },
@@ -169,13 +168,41 @@ const settingsSchema = new mongoose.Schema({
         enabled: { type: Boolean, default: true },
         logChannelId: { type: String, default: null },
         muteRoleId: { type: String, default: null }
+    },
+    tickets: {
+        enabled: { type: Boolean, default: false },
+        categoryId: { type: String, default: null },
+        supportRoleId: { type: String, default: null },
+        logChannelId: { type: String, default: null },
+        maxTickets: { type: Number, default: 3 },
+        transcripts: { type: Boolean, default: true }
+    },
+    giveaways: {
+        enabled: { type: Boolean, default: false },
+        defaultDuration: { type: Number, default: 86400000 },
+        defaultWinners: { type: Number, default: 1 },
+        requiredRoleId: { type: String, default: null },
+        requiredLevel: { type: Number, default: 0 }
+    },
+    colorRoles: {
+        enabled: { type: Boolean, default: false },
+        channelId: { type: String, default: null },
+        maxRoles: { type: Number, default: 1 },
+        allowMultiple: { type: Boolean, default: false },
+        roles: { type: Object, default: {} }
+    },
+    warns: {
+        enabled: { type: Boolean, default: true },
+        autoPunish: { type: Boolean, default: true },
+        maxWarns: { type: Number, default: 3 },
+        punishment: { type: String, default: 'timeout' },
+        logChannelId: { type: String, default: null }
     }
 });
 
 const Settings = mongoose.model('Settings', settingsSchema);
 
-=======
->>>>>>> origin/main
+// ==================== Exports ====================
 module.exports = {
     Action,
     Warning,
@@ -188,10 +215,6 @@ module.exports = {
     ReactionRole,
     Giveaway,
     AntiNukeConfig,
-<<<<<<< HEAD
     LogConfig,
-    Settings,
-=======
-    LogConfig
->>>>>>> origin/main
+    Settings
 };
