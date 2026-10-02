@@ -144,6 +144,7 @@ const Giveaway = mongoose.model('Giveaway', giveawaySchema);
 const AntiNukeConfig = mongoose.model('AntiNukeConfig', antiNukeConfigSchema);
 const LogConfig = mongoose.model('LogConfig', logConfigSchema);
 
+<<<<<<< HEAD
 // ==================== Settings (ڕێکخستنەکان) ====================
 const settingsSchema = new mongoose.Schema({
     guildId: { type: String, required: true, unique: true },
@@ -173,6 +174,8 @@ const settingsSchema = new mongoose.Schema({
 
 const Settings = mongoose.model('Settings', settingsSchema);
 
+=======
+>>>>>>> origin/main
 module.exports = {
     Action,
     Warning,
@@ -185,6 +188,10 @@ module.exports = {
     ReactionRole,
     Giveaway,
     AntiNukeConfig,
+<<<<<<< HEAD
     LogConfig,
     Settings,
+=======
+    LogConfig
+>>>>>>> origin/main
 };

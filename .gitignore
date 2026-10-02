@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Environment variables (نهێنی)
 .env
 
@@ -19,3 +20,16 @@ Thumbs.db
 # Build
 dist/
 build/
+=======
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+*.env
+.DS_Store
+Thumbs.db
+*.log
+logs/
+.npm/
+>>>>>>> origin/main

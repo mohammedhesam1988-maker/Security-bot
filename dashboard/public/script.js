@@ -847,6 +847,7 @@ function renderGames(data) {
     container.innerHTML = `
         <div class="item-box">
             <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateGames('enabled', this.checked)"></div>
+<<<<<<< HEAD
             <div class="setting-row"><span>Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateGames('channelId', this.value)"></div>
             <div class="setting-row"><span>Trivia:</span><input type="checkbox" ${data.trivia ? 'checked' : ''} onchange="updateGames('trivia', this.checked)"></div>
             <div class="setting-row"><span>Wordle:</span><input type="checkbox" ${data.wordle ? 'checked' : ''} onchange="updateGames('wordle', this.checked)"></div>
@@ -855,6 +856,13 @@ function renderGames(data) {
             <div class="setting-row"><span>Points Per Win:</span><input type="number" value="${data.pointsPerWin || 10}" onchange="updateGames('pointsPerWin', this.value)"></div>
             <div class="setting-row"><span>Show Correct Answer:</span><input type="checkbox" ${data.showCorrectAnswer ? 'checked' : ''} onchange="updateGames('showCorrectAnswer', this.checked)"></div>
             <div class="setting-row"><span>Show Wrong Answer:</span><input type="checkbox" ${data.showWrongAnswer ? 'checked' : ''} onchange="updateGames('showWrongAnswer', this.checked)"></div>
+=======
+            <div class="setting-row"><span>Truth or Dare:</span><input type="checkbox" ${data.truthOrDare ? 'checked' : ''} onchange="updateGames('truthOrDare', this.checked)"></div>
+            <div class="setting-row"><span>Would You Rather:</span><input type="checkbox" ${data.wouldYouRather ? 'checked' : ''} onchange="updateGames('wouldYouRather', this.checked)"></div>
+            <div class="setting-row"><span>Trivia:</span><input type="checkbox" ${data.trivia ? 'checked' : ''} onchange="updateGames('trivia', this.checked)"></div>
+            <div class="setting-row"><span>Wordle:</span><input type="checkbox" ${data.wordle ? 'checked' : ''} onchange="updateGames('wordle', this.checked)"></div>
+            <div class="setting-row"><span>Points Per Win:</span><input type="number" value="${data.pointsPerWin || 10}" onchange="updateGames('pointsPerWin', parseInt(this.value))"></div>
+>>>>>>> origin/main
         </div>
     `;
 }
