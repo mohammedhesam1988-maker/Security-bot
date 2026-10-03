@@ -9,48 +9,20 @@ module.exports = {
             const command = client.commands.get(interaction.commandName);
             if (!command) return;
 
-            if (config.utility && config.utility[interaction.commandName]) {
-                const cmdSettings = config.utility[interaction.commandName];
+            // ==================== پشکنینی چانێل و ڕۆڵ و سنوور ====================
+            const { checkChannel, checkRoles, checkLimit } = require('../handlers/commandHandler.js');
 
-                if (!cmdSettings.enabled) {
-                    return interaction.reply({ content: '❌ This command is disabled.', ephemeral: true }).catch(() => {});
-                }
+            const channelCheck = await checkChannel(interaction, interaction.commandName, config);
+            if (!channelCheck) return;
 
-                if (cmdSettings.enabledRoles && cmdSettings.enabledRoles.length > 0) {
-                    if (!interaction.member.roles.cache.some(r => cmdSettings.enabledRoles.includes(r.id))) {
-                        return interaction.reply({ content: '❌ You do not have permission to use this command.', ephemeral: true }).catch(() => {});
-                    }
-                }
+            const roleCheck = await checkRoles(interaction, interaction.commandName, config);
+            if (!roleCheck) return;
 
-                if (cmdSettings.disabledRoles && cmdSettings.disabledRoles.length > 0) {
-                    if (interaction.member.roles.cache.some(r => cmdSettings.disabledRoles.includes(r.id))) {
-                        return interaction.reply({ content: '❌ You are not allowed to use this command.', ephemeral: true }).catch(() => {});
-                    }
-                }
+            const limitCheck = await checkLimit(interaction, interaction.commandName, config);
+            if (!limitCheck) return;
 
-                if (cmdSettings.enabledChannels && cmdSettings.enabledChannels.length > 0) {
-                    if (!cmdSettings.enabledChannels.includes(interaction.channel.id)) {
-                        return interaction.reply({ content: '❌ This command cannot be used in this channel.', ephemeral: true }).catch(() => {});
-                    }
-                }
-
-                if (cmdSettings.disabledChannels && cmdSettings.disabledChannels.length > 0) {
-                    if (cmdSettings.disabledChannels.includes(interaction.channel.id)) {
-                        return interaction.reply({ content: '❌ This command cannot be used in this channel.', ephemeral: true }).catch(() => {});
-                    }
-                }
-
-                if (cmdSettings.maxLimit && cmdSettings.maxLimit > 0) {
-                    if (!client.commandUsage) client.commandUsage = new Map();
-                    const key = `${interaction.user.id}-${interaction.commandName}`;
-                    const usage = client.commandUsage.get(key) || 0;
-
-                    if (usage >= cmdSettings.maxLimit) {
-                        return interaction.reply({ content: `❌ You have reached the max limit (${cmdSettings.maxLimit}) for this command.`, ephemeral: true }).catch(() => {});
-                    }
-                    client.commandUsage.set(key, usage + 1);
-                }
-            }
+           const whitelistCheck = await checkWhitelistLimit(interaction, interaction.commandName, config);
+           if (!whitelistCheck) return;
 
             try {
                 await command.execute(interaction, client, config);
@@ -156,12 +128,14 @@ module.exports = {
                     const settings = await Settings.findOne({ guildId: interaction.guild.id });
                     const existingRoles = Object.values(settings?.colorRoles?.roles || {});
 
+                    // سڕینەوەی ڕۆڵەکانی پێشوو
                     for (const existingRoleId of existingRoles) {
                         if (interaction.member.roles.cache.has(existingRoleId)) {
                             await interaction.member.roles.remove(existingRoleId).catch(() => {});
                         }
                     }
 
+                    // زیادکردنی ڕۆڵی نوێ
                     await interaction.member.roles.add(role).catch(() => {});
                     await interaction.reply({ content: `✅ ڕەنگەکەت گۆڕدرا بۆ: **${role.name}**`, ephemeral: true }).catch(() => {});
                 }

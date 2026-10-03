@@ -3,6 +3,7 @@ const API_BASE = 'http://127.0.0.1:3000/api';
 let whitelistData = { users: {}, roles: {}, channels: {} };
 let antispamData = {};
 let antinukeData = {};
+let botConfig = {};
 
 // ==================== BOT STATUS ====================
 async function fetchStatus() {
@@ -17,6 +18,15 @@ async function fetchStatus() {
         if (statusText) statusText.innerText = data.online ? 'Online' : 'Offline';
         if (statusDot) statusDot.className = data.online ? 'dot online' : 'dot offline';
     } catch (e) { console.error(e); }
+}
+
+// ==================== CONFIG ====================
+async function fetchConfig() {
+    try {
+        const res = await fetch(`${API_BASE}/config`);
+        botConfig = await res.json();
+        console.log('Config loaded:', Object.keys(botConfig.utility || {}).length, 'utility commands');
+    } catch (e) { console.error('Error fetching config:', e); }
 }
 
 // ==================== GENERAL ====================
@@ -54,73 +64,14 @@ function renderGeneral(data) {
                 </select>
             </div>
         </div>
-        <div class="item-box">
-            <h4>Appearance</h4>
-            <div class="setting-row"><span>Theme:</span>
-                <select onchange="updateGeneral('theme', this.value)">
-                    <option value="dark" ${data.theme === 'dark' ? 'selected' : ''}>Dark</option>
-                    <option value="light" ${data.theme === 'light' ? 'selected' : ''}>Light</option>
-                </select>
-            </div>
-            <div class="setting-row"><span>Accent Color:</span><input type="color" value="${data.accentColor || '#fbbf24'}" onchange="updateGeneral('accentColor', this.value)"></div>
-            <div class="setting-row"><span>Language:</span>
-                <select onchange="updateGeneral('language', this.value)">
-                    <option value="en" ${data.language === 'en' ? 'selected' : ''}>English</option>
-                    <option value="ku" ${data.language === 'ku' ? 'selected' : ''}>Kurdish</option>
-                    <option value="ar" ${data.language === 'ar' ? 'selected' : ''}>Arabic</option>
-                </select>
-            </div>
+        <div style="margin-top: 20px; text-align: left;">
+            <button class="btn btn-save" onclick="saveSection('general')">💾 پاشەکەوتکردن</button>
         </div>
     `;
 }
 
 async function updateGeneral(field, value) {
     try { await fetch(`${API_BASE}/general/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchGeneral(); } catch (e) { alert('Error'); }
-}
-
-// ==================== PREMIUM ====================
-async function fetchPremium() {
-    try {
-        const res = await fetch(`${API_BASE}/premium`);
-        const data = await res.json();
-        renderPremium(data);
-    } catch (e) { console.error(e); }
-}
-
-function renderPremium(data) {
-    const container = document.getElementById('premiumContent');
-    if (!container) return;
-    const tiers = data.tiers || {};
-    let tiersHtml = '';
-    Object.keys(tiers).forEach(tierKey => {
-        const tier = tiers[tierKey];
-        const isActive = data.tier === tierKey;
-        tiersHtml += `
-            <div class="item-box" style="border-color: ${tier.color}">
-                <h4 style="color: ${tier.color}">${tier.name} ${isActive ? '✅' : ''}</h4>
-                <div class="setting-row"><span>Features:</span><span style="font-size: 12px;">${(tier.features || []).join(', ') || 'None'}</span></div>
-                ${!isActive ? `<button class="btn btn-add" onclick="setPremiumTier('${tierKey}')">Set as Active</button>` : ''}
-            </div>
-        `;
-    });
-    container.innerHTML = `
-        <div class="item-box">
-            <div class="setting-row"><span>Premium Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="togglePremium(this.checked)"></div>
-            <div class="setting-row"><span>Owner Override:</span><input type="checkbox" ${data.ownerOverride ? 'checked' : ''} onchange="updatePremium('ownerOverride', this.checked)"></div>
-            <div class="setting-row"><span>Whitelist Override:</span><input type="checkbox" ${data.whitelistOverride ? 'checked' : ''} onchange="updatePremium('whitelistOverride', this.checked)"></div>
-        </div>
-        <h3>Tiers</h3>${tiersHtml}
-    `;
-}
-
-async function togglePremium(value) {
-    try { await fetch(`${API_BASE}/premium/toggle`, { method: 'POST' }); await fetchPremium(); } catch (e) { alert('Error'); }
-}
-async function updatePremium(field, value) {
-    try { await fetch(`${API_BASE}/premium/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchPremium(); } catch (e) { alert('Error'); }
-}
-async function setPremiumTier(tier) {
-    try { await fetch(`${API_BASE}/premium/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field: 'tier', value: tier }) }); await fetchPremium(); } catch (e) { alert('Error'); }
 }
 
 // ==================== ANALYTICS ====================
@@ -145,6 +96,9 @@ function renderAnalytics(data) {
             <div class="setting-row"><span>Daily Report:</span><input type="checkbox" ${data.dailyReport ? 'checked' : ''} onchange="updateAnalytics('dailyReport', this.checked)"></div>
             <div class="setting-row"><span>Report Channel ID:</span><input type="text" value="${data.reportChannel || ''}" placeholder="Channel ID" onchange="updateAnalytics('reportChannel', this.value)"></div>
         </div>
+        <div style="margin-top: 20px; text-align: left;">
+            <button class="btn btn-save" onclick="saveSection('analytics')">💾 پاشەکەوتکردن</button>
+        </div>
     `;
 }
 
@@ -165,49 +119,265 @@ function renderWhitelist() {
     const container = document.getElementById('whitelistContent');
     if (!container) return;
     container.innerHTML = '';
-    const categories = [
-        { key: 'users', label: 'Users' },
-        { key: 'roles', label: 'Roles' },
-        { key: 'channels', label: 'Channels' }
+
+    // لیستی هەموو ئەکشنەکان (لە Anti-Nuke, Anti-Raid, Anti-Spam, Beast Mode)
+    const actions = [
+        // Anti-Nuke
+        'ban', 'kick', 'channelCreate', 'channelDelete', 'channelUpdate',
+        'channelPermissionsUpdate', 'roleCreate', 'roleDelete', 'roleUpdate',
+        'mention', 'botAdd', 'prune', 'dangerousRolePermissions', 'dangerousRoleAdd',
+        'vanityChange', 'serverRename', 'serverIconChange', 'roleRename',
+        'channelRename', 'channelTopicChange', 'emojiCreate', 'emojiDelete',
+        'inviteDelete', 'inviteLink', 'ghostPing', 'webhookCreate', 'webhookDelete',
+        'webhookUpdate', 'threadCreate', 'threadDelete', 'threadUpdate',
+        'stickerCreate', 'stickerDelete',
+        // Anti-Raid
+        'joinRate', 'accountAge', 'checkAvatar', 'checkUsername',
+        // Anti-Spam
+        'spam', 'invites', 'links', 'phishing', 'bannedWords', 'caps', 'emoji',
+        'mentions', 'duplicates', 'zalgo', 'charRepeat', 'personalInfo',
+        'massMention', 'stickerSpam', 'attachmentSpam', 'voiceSpam',
+        'voiceConnectSpam', 'voiceMuteSpam', 'voiceDeafenSpam',
+        'voiceJoinLeaveSpam', 'voiceMoveSpam',
+        // Beast Mode
+        'beastBan', 'beastKick', 'beastChannelCreate', 'beastChannelDelete',
+        'beastRoleCreate', 'beastRoleDelete'
     ];
-    categories.forEach(cat => {
-        const catDiv = document.createElement('div');
-        catDiv.className = 'category';
-        catDiv.innerHTML = `<h3>${cat.label}</h3>`;
-        const actions = Object.keys(whitelistData[cat.key] || {});
-        actions.forEach(action => {
-            const box = document.createElement('div');
-            box.className = 'item-box';
-            box.innerHTML = `
-                <h4>${action.toUpperCase()}</h4>
-                <div class="input-row">
-                    <input type="text" id="input-${cat.key}-${action}" placeholder="ID">
-                    <button class="btn btn-add" onclick="addItem('${cat.key}', '${action}')">Add</button>
-                </div>
-                <div class="item-list" id="list-${cat.key}-${action}"></div>
-            `;
-            catDiv.appendChild(box);
-            const listDiv = box.querySelector(`#list-${cat.key}-${action}`);
-            const items = whitelistData[cat.key][action] || [];
-            items.forEach(id => {
-                const itemDiv = document.createElement('div');
-                itemDiv.innerHTML = `<span>${id}</span><button onclick="removeItem('${cat.key}', '${action}', '${id}')">✕</button>`;
-                listDiv.appendChild(itemDiv);
-            });
-        });
-        container.appendChild(catDiv);
+
+    // ==================== Trusted Users ====================
+    const trustedDiv = document.createElement('div');
+    trustedDiv.className = 'category';
+    trustedDiv.innerHTML = `<h3>✅ Trusted Users</h3>`;
+    const trustedBox = document.createElement('div');
+    trustedBox.className = 'item-box';
+    trustedBox.innerHTML = `
+        <div class="input-row">
+            <input type="text" id="input-trusted-users" placeholder="User ID">
+            <button class="btn btn-add" onclick="addTrustedUser()">Add</button>
+        </div>
+        <div class="item-list" id="list-trusted-users"></div>
+    `;
+    trustedDiv.appendChild(trustedBox);
+    const trustedList = trustedBox.querySelector('#list-trusted-users');
+    const trustedUsers = whitelistData.trustedUsers || [];
+    trustedUsers.forEach(id => {
+        const itemDiv = document.createElement('div');
+        itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
+        itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeTrustedUser('${id}')">✕</button>`;
+        trustedList.appendChild(itemDiv);
     });
+    container.appendChild(trustedDiv);
+
+    // ==================== Blacklisted Users ====================
+    const blacklistDiv = document.createElement('div');
+    blacklistDiv.className = 'category';
+    blacklistDiv.innerHTML = `<h3>❌ Blacklisted Users</h3>`;
+    const blacklistBox = document.createElement('div');
+    blacklistBox.className = 'item-box';
+    blacklistBox.innerHTML = `
+        <div class="input-row">
+            <input type="text" id="input-blacklisted-users" placeholder="User ID">
+            <button class="btn btn-add" onclick="addBlacklistedUser()">Add</button>
+        </div>
+        <div class="item-list" id="list-blacklisted-users"></div>
+    `;
+    blacklistDiv.appendChild(blacklistBox);
+    const blacklistList = blacklistBox.querySelector('#list-blacklisted-users');
+    const blacklistedUsers = whitelistData.blacklistedUsers || [];
+    blacklistedUsers.forEach(id => {
+        const itemDiv = document.createElement('div');
+        itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
+        itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeBlacklistedUser('${id}')">✕</button>`;
+        blacklistList.appendChild(itemDiv);
+    });
+    container.appendChild(blacklistDiv);
+
+    // ==================== Dangerous Roles ====================
+    const dangerousDiv = document.createElement('div');
+    dangerousDiv.className = 'category';
+    dangerousDiv.innerHTML = `<h3>⚠️ Dangerous Roles</h3>`;
+    const dangerousBox = document.createElement('div');
+    dangerousBox.className = 'item-box';
+    dangerousBox.innerHTML = `
+        <div class="input-row">
+            <input type="text" id="input-dangerous-roles" placeholder="Role ID">
+            <button class="btn btn-add" onclick="addDangerousRole()">Add</button>
+        </div>
+        <div class="item-list" id="list-dangerous-roles"></div>
+    `;
+    dangerousDiv.appendChild(dangerousBox);
+    const dangerousList = dangerousBox.querySelector('#list-dangerous-roles');
+    const dangerousRoles = whitelistData.dangerousRoles || [];
+    dangerousRoles.forEach(id => {
+        const itemDiv = document.createElement('div');
+        itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
+        itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeDangerousRole('${id}')">✕</button>`;
+        dangerousList.appendChild(itemDiv);
+    });
+    container.appendChild(dangerousDiv);
+
+    // ==================== Users ====================
+    const usersDiv = document.createElement('div');
+    usersDiv.className = 'category';
+    usersDiv.innerHTML = `<h3>👥 Users</h3>`;
+
+    actions.forEach(action => {
+        const actionBox = document.createElement('div');
+        actionBox.className = 'item-box';
+        actionBox.innerHTML = `
+            <h4>${action.toUpperCase()}</h4>
+            <div class="input-row">
+                <input type="text" id="input-users-${action}" placeholder="User ID">
+                <button class="btn btn-add" onclick="addWhitelistItem('users', '${action}')">Add</button>
+            </div>
+            <div class="item-list" id="list-users-${action}"></div>
+        `;
+        usersDiv.appendChild(actionBox);
+
+        const listDiv = actionBox.querySelector(`#list-users-${action}`);
+        const items = whitelistData.users?.[action] || [];
+        items.forEach(id => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
+            itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeWhitelistItem('users', '${action}', '${id}')">✕</button>`;
+            listDiv.appendChild(itemDiv);
+        });
+    });
+
+    container.appendChild(usersDiv);
+
+    // ==================== Roles ====================
+    const rolesDiv = document.createElement('div');
+    rolesDiv.className = 'category';
+    rolesDiv.innerHTML = `<h3>🎭 Roles</h3>`;
+
+    actions.forEach(action => {
+        const actionBox = document.createElement('div');
+        actionBox.className = 'item-box';
+        actionBox.innerHTML = `
+            <h4>${action.toUpperCase()}</h4>
+            <div class="input-row">
+                <input type="text" id="input-roles-${action}" placeholder="Role ID">
+                <button class="btn btn-add" onclick="addWhitelistItem('roles', '${action}')">Add</button>
+            </div>
+            <div class="item-list" id="list-roles-${action}"></div>
+        `;
+        rolesDiv.appendChild(actionBox);
+
+        const listDiv = actionBox.querySelector(`#list-roles-${action}`);
+        const items = whitelistData.roles?.[action] || [];
+        items.forEach(id => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
+            itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeWhitelistItem('roles', '${action}', '${id}')">✕</button>`;
+            listDiv.appendChild(itemDiv);
+        });
+    });
+
+    container.appendChild(rolesDiv);
+
+    // ==================== Channels ====================
+    const channelsDiv = document.createElement('div');
+    channelsDiv.className = 'category';
+    channelsDiv.innerHTML = `<h3>📢 Channels</h3>`;
+
+    actions.forEach(action => {
+        const actionBox = document.createElement('div');
+        actionBox.className = 'item-box';
+        actionBox.innerHTML = `
+            <h4>${action.toUpperCase()}</h4>
+            <div class="input-row">
+                <input type="text" id="input-channels-${action}" placeholder="Channel ID">
+                <button class="btn btn-add" onclick="addWhitelistItem('channels', '${action}')">Add</button>
+            </div>
+            <div class="item-list" id="list-channels-${action}"></div>
+        `;
+        channelsDiv.appendChild(actionBox);
+
+        const listDiv = actionBox.querySelector(`#list-channels-${action}`);
+        const items = whitelistData.channels?.[action] || [];
+        items.forEach(id => {
+            const itemDiv = document.createElement('div');
+            itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
+            itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeWhitelistItem('channels', '${action}', '${id}')">✕</button>`;
+            listDiv.appendChild(itemDiv);
+        });
+    });
+
+    container.appendChild(channelsDiv);
 }
 
-async function addItem(type, action) {
-    const input = document.getElementById(`input-${type}-${action}`);
+// ==================== Trusted Users Functions ====================
+async function addTrustedUser() {
+    const input = document.getElementById('input-trusted-users');
     const id = input.value.trim();
-    if (!id) return;
-    try { await fetch(`${API_BASE}/whitelist/add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, action, id }) }); await fetchWhitelist(); } catch (e) { alert('Error'); }
+    if (!id) { alert('❌ تکایە ID بنووسە.'); return; }
+    try {
+        await fetch(`${API_BASE}/whitelist/add-trusted-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        await fetchWhitelist();
+    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
 }
 
-async function removeItem(type, action, id) {
-    try { await fetch(`${API_BASE}/whitelist/remove`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, action, id }) }); await fetchWhitelist(); } catch (e) { alert('Error'); }
+async function removeTrustedUser(id) {
+    try {
+        await fetch(`${API_BASE}/whitelist/remove-trusted-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        await fetchWhitelist();
+    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
+}
+
+// ==================== Blacklisted Users Functions ====================
+async function addBlacklistedUser() {
+    const input = document.getElementById('input-blacklisted-users');
+    const id = input.value.trim();
+    if (!id) { alert('❌ تکایە ID بنووسە.'); return; }
+    try {
+        await fetch(`${API_BASE}/whitelist/add-blacklisted-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        await fetchWhitelist();
+    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
+}
+
+async function removeBlacklistedUser(id) {
+    try {
+        await fetch(`${API_BASE}/whitelist/remove-blacklisted-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        await fetchWhitelist();
+    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
+}
+
+// ==================== Dangerous Roles Functions ====================
+async function addDangerousRole() {
+    const input = document.getElementById('input-dangerous-roles');
+    const id = input.value.trim();
+    if (!id) { alert('❌ تکایە ID بنووسە.'); return; }
+    try {
+        await fetch(`${API_BASE}/whitelist/add-dangerous-role`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        await fetchWhitelist();
+    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
+}
+
+async function removeDangerousRole(id) {
+    try {
+        await fetch(`${API_BASE}/whitelist/remove-dangerous-role`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        await fetchWhitelist();
+    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
+}
+
+// ==================== Whitelist Functions ====================
+async function addWhitelistItem(type, action) {
+    const input = document.getElementById(`input-${type}-${action}`);
+    if (!input) { alert('❌ خانەی ID نەدۆزرایەوە.'); return; }
+    const id = input.value.trim();
+    if (!id) { alert('❌ تکایە ID بنووسە.'); return; }
+    try {
+        await fetch(`${API_BASE}/whitelist/add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, action, id }) });
+        await fetchWhitelist();
+    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
+}
+
+async function removeWhitelistItem(type, action, id) {
+    try {
+        await fetch(`${API_BASE}/whitelist/remove`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, action, id }) });
+        await fetchWhitelist();
+    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
 }
 
 // ==================== ANTI-SPAM ====================
@@ -311,39 +481,27 @@ function renderRoleLimits(data) {
     const container = document.getElementById('roleLimitsContent');
     if (!container) return;
     container.innerHTML = '';
-    
     Object.keys(data).forEach(action => {
         const settings = data[action];
         if (typeof settings !== 'object' || settings === null) return;
-
         const box = document.createElement('div');
         box.className = 'item-box';
-
         let fieldsHtml = '';
-
         if (settings.enabled !== undefined) {
             fieldsHtml += `<div class="setting-row"><span>Enabled:</span><input type="checkbox" ${settings.enabled ? 'checked' : ''} onchange="updateRoleLimits('${action}', 'enabled', this.checked)"></div>`;
         }
-
         if (settings.max !== undefined) {
             fieldsHtml += `<div class="setting-row"><span>Max:</span><input type="number" value="${settings.max}" style="width:80px;" onchange="updateRoleLimits('${action}', 'max', this.value)"></div>`;
         }
-
         if (settings.punishment !== undefined) {
-            fieldsHtml += `
-                <div class="setting-row">
-                    <span>Punishment:</span>
-                    <select onchange="updateRoleLimits('${action}', 'punishment', this.value)">
-                        <option value="delete" ${settings.punishment === 'delete' ? 'selected' : ''}>Delete</option>
-                        <option value="timeout" ${settings.punishment === 'timeout' ? 'selected' : ''}>Timeout</option>
-                        <option value="kick" ${settings.punishment === 'kick' ? 'selected' : ''}>Kick</option>
-                        <option value="ban" ${settings.punishment === 'ban' ? 'selected' : ''}>Ban</option>
-                        <option value="detect" ${settings.punishment === 'detect' ? 'selected' : ''}>Detect</option>
-                    </select>
-                </div>
-            `;
+            fieldsHtml += `<div class="setting-row"><span>Punishment:</span><select onchange="updateRoleLimits('${action}', 'punishment', this.value)">
+                <option value="delete" ${settings.punishment === 'delete' ? 'selected' : ''}>Delete</option>
+                <option value="timeout" ${settings.punishment === 'timeout' ? 'selected' : ''}>Timeout</option>
+                <option value="kick" ${settings.punishment === 'kick' ? 'selected' : ''}>Kick</option>
+                <option value="ban" ${settings.punishment === 'ban' ? 'selected' : ''}>Ban</option>
+                <option value="detect" ${settings.punishment === 'detect' ? 'selected' : ''}>Detect</option>
+            </select></div>`;
         }
-
         box.innerHTML = `<h4>${action.toUpperCase()}</h4>${fieldsHtml}`;
         container.appendChild(box);
     });
@@ -404,6 +562,9 @@ async function fetchAntiRaid() {
                 <div class="setting-row"><span>Time Window (s):</span><input type="number" value="${data.timeWindow || 10}" style="width:80px;" onchange="updateAntiRaid('timeWindow', this.value)"></div>
                 <div class="setting-row"><span>Punishment:</span><select onchange="updateAntiRaid('punishment', this.value)"><option value="kick" ${data.punishment === 'kick' ? 'selected' : ''}>Kick</option><option value="ban" ${data.punishment === 'ban' ? 'selected' : ''}>Ban</option><option value="lockdown" ${data.punishment === 'lockdown' ? 'selected' : ''}>Lockdown</option></select></div>
             </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('antiraid')">💾 پاشەکەوتکردن</button>
+            </div>
         `;
     } catch (e) { console.error(e); }
 }
@@ -429,6 +590,9 @@ async function fetchVerification() {
                 <div class="setting-row"><span>Verification Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateVerification('channelId', this.value)"></div>
                 <div class="setting-row"><span>Verification Role ID:</span><input type="text" value="${data.roleId || ''}" placeholder="Role ID" onchange="updateVerification('roleId', this.value)"></div>
             </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('verification')">💾 پاشەکەوتکردن</button>
+            </div>
         `;
     } catch (e) { console.error(e); }
 }
@@ -453,6 +617,9 @@ async function fetchModeration() {
                 <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateModeration('enabled', this.checked)"></div>
                 <div class="setting-row"><span>Log Channel ID:</span><input type="text" value="${data.logChannelId || ''}" placeholder="Channel ID" onchange="updateModeration('logChannelId', this.value)"></div>
                 <div class="setting-row"><span>Mute Role ID:</span><input type="text" value="${data.muteRoleId || ''}" placeholder="Role ID" onchange="updateModeration('muteRoleId', this.value)"></div>
+            </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('moderation')">💾 پاشەکەوتکردن</button>
             </div>
         `;
     } catch (e) { console.error(e); }
@@ -497,6 +664,9 @@ function renderAutoRole(data) {
             <h4>Bot Roles</h4>
             <div class="input-row"><input type="text" id="bot-role-input" placeholder="Role ID"><button class="btn btn-add" onclick="addAutoRole('botRoles')">Add</button></div>
             <div style="margin-top:10px;">${botRolesHtml || '<p style="color:#94a3b8;">No bot roles added.</p>'}</div>
+        </div>
+        <div style="margin-top: 20px; text-align: left;">
+            <button class="btn btn-save" onclick="saveSection('autorole')">💾 پاشەکەوتکردن</button>
         </div>
     `;
 }
@@ -605,6 +775,9 @@ async function fetchWelcome() {
                 <div class="setting-row"><span>Footer:</span><input type="text" value="${data.footer || ''}" placeholder="Footer" onchange="updateWelcome('footer', this.value)"></div>
                 <div class="setting-row"><span>Emoji:</span><input type="text" value="${data.emoji || ''}" placeholder="Emoji" onchange="updateWelcome('emoji', this.value)"></div>
             </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('welcome')">💾 پاشەکەوتکردن</button>
+            </div>
         `;
     } catch (e) { console.error(e); }
 }
@@ -635,6 +808,9 @@ async function fetchGoodbye() {
                 <div class="setting-row"><span>Thumbnail URL:</span><input type="text" value="${data.thumbnailUrl || ''}" placeholder="Thumbnail URL" onchange="updateGoodbye('thumbnailUrl', this.value)"></div>
                 <div class="setting-row"><span>Footer:</span><input type="text" value="${data.footer || ''}" placeholder="Footer" onchange="updateGoodbye('footer', this.value)"></div>
                 <div class="setting-row"><span>Emoji:</span><input type="text" value="${data.emoji || ''}" placeholder="Emoji" onchange="updateGoodbye('emoji', this.value)"></div>
+            </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('goodbye')">💾 پاشەکەوتکردن</button>
             </div>
         `;
     } catch (e) { console.error(e); }
@@ -683,6 +859,9 @@ function renderReactionRoles(data) {
         </div>
         <h4>Reaction Roles:</h4>
         ${rolesHtml || '<p style="color:#94a3b8;">No reaction roles.</p>'}
+        <div style="margin-top: 20px; text-align: left;">
+            <button class="btn btn-save" onclick="saveSection('reactionroles')">💾 پاشەکەوتکردن</button>
+        </div>
     `;
 }
 
@@ -710,6 +889,9 @@ async function fetchInviteTracker() {
             <div class="item-box">
                 <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateInviteTracker('enabled', this.checked)"></div>
                 <div class="setting-row"><span>Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateInviteTracker('channelId', this.value)"></div>
+            </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('invitetracker')">💾 پاشەکەوتکردن</button>
             </div>
         `;
     } catch (e) { console.error(e); }
@@ -760,6 +942,9 @@ function renderLevels(data) {
             </div>
             <div style="margin-top:10px;">${rolesHtml || '<p style="color:#94a3b8;">No level roles added.</p>'}</div>
         </div>
+        <div style="margin-top: 20px; text-align: left;">
+            <button class="btn btn-save" onclick="saveSection('levels')">💾 پاشەکەوتکردن</button>
+        </div>
     `;
 }
 
@@ -798,6 +983,9 @@ async function fetchTickets() {
                 <div class="setting-row"><span>Max Tickets:</span><input type="number" value="${data.maxTickets || 3}" onchange="updateTickets('maxTickets', this.value)"></div>
                 <div class="setting-row"><span>Transcripts:</span><input type="checkbox" ${data.transcripts ? 'checked' : ''} onchange="updateTickets('transcripts', this.checked)"></div>
             </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('tickets')">💾 پاشەکەوتکردن</button>
+            </div>
         `;
     } catch (e) { console.error(e); }
 }
@@ -820,6 +1008,9 @@ async function fetchGiveaways() {
                 <div class="setting-row"><span>Default Winners:</span><input type="number" value="${data.defaultWinners || 1}" onchange="updateGiveaways('defaultWinners', this.value)"></div>
                 <div class="setting-row"><span>Required Role ID:</span><input type="text" value="${data.requiredRoleId || ''}" placeholder="Role ID" onchange="updateGiveaways('requiredRoleId', this.value)"></div>
                 <div class="setting-row"><span>Required Level:</span><input type="number" value="${data.requiredLevel || 0}" onchange="updateGiveaways('requiredLevel', this.value)"></div>
+            </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('giveaways')">💾 پاشەکەوتکردن</button>
             </div>
         `;
     } catch (e) { console.error(e); }
@@ -847,6 +1038,9 @@ async function fetchWarns() {
                     <option value="ban" ${data.punishment === 'ban' ? 'selected' : ''}>Ban</option>
                 </select></div>
                 <div class="setting-row"><span>Log Channel ID:</span><input type="text" value="${data.logChannelId || ''}" placeholder="Channel ID" onchange="updateWarns('logChannelId', this.value)"></div>
+            </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('warns')">💾 پاشەکەوتکردن</button>
             </div>
         `;
     } catch (e) { console.error(e); }
@@ -880,6 +1074,9 @@ function renderGames(data) {
             <div class="setting-row"><span>Show Correct Answer:</span><input type="checkbox" ${data.showCorrectAnswer ? 'checked' : ''} onchange="updateGames('showCorrectAnswer', this.checked)"></div>
             <div class="setting-row"><span>Show Wrong Answer:</span><input type="checkbox" ${data.showWrongAnswer ? 'checked' : ''} onchange="updateGames('showWrongAnswer', this.checked)"></div>
         </div>
+        <div style="margin-top: 20px; text-align: left;">
+            <button class="btn btn-save" onclick="saveSection('games')">💾 پاشەکەوتکردن</button>
+        </div>
     `;
 }
 
@@ -901,6 +1098,9 @@ async function fetchAnnouncements() {
                 <div class="setting-row"><span>Mention Everyone:</span><input type="checkbox" ${data.mentionEveryone ? 'checked' : ''} onchange="updateAnnouncements('mentionEveryone', this.checked)"></div>
                 <div class="setting-row"><span>Use Embed:</span><input type="checkbox" ${data.embed ? 'checked' : ''} onchange="updateAnnouncements('embed', this.checked)"></div>
                 <div class="setting-row"><span>Color:</span><input type="color" value="${data.color || '#5865F2'}" onchange="updateAnnouncements('color', this.value)"></div>
+            </div>
+            <div style="margin-top: 20px; text-align: left;">
+                <button class="btn btn-save" onclick="saveSection('announcements')">💾 پاشەکەوتکردن</button>
             </div>
         `;
     } catch (e) { console.error(e); }
@@ -948,6 +1148,9 @@ function renderColorRoles(data) {
             </div>
             <div style="margin-top:10px;">${rolesHtml || '<p style="color:#94a3b8;">No color roles added.</p>'}</div>
         </div>
+        <div style="margin-top: 20px; text-align: left;">
+            <button class="btn btn-save" onclick="saveSection('colorroles')">💾 پاشەکەوتکردن</button>
+        </div>
     `;
 }
 
@@ -992,13 +1195,16 @@ function renderUtility(data) {
         let fieldsHtml = `
             <div class="setting-row"><span>Command:</span><strong style="color:#fbbf24;">/${command}</strong></div>
             <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${settings.enabled ? 'checked' : ''} onchange="updateUtility('${command}', 'enabled', this.checked)"></div>
+            <div class="setting-row"><span>Channels:</span><input type="text" value="${(settings.channels || []).join(',')}" placeholder="Channel IDs (comma separated)" onchange="updateUtility('${command}', 'channels', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
+            <div class="setting-row"><span>Disabled Channels:</span><input type="text" value="${(settings.disabledChannels || []).join(',')}" placeholder="Channel IDs (comma separated)" onchange="updateUtility('${command}', 'disabledChannels', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
+            <div class="setting-row"><span>Roles:</span><input type="text" value="${(settings.roles || []).join(',')}" placeholder="Role IDs (comma separated)" onchange="updateUtility('${command}', 'roles', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
+            <div class="setting-row"><span>Disabled Roles:</span><input type="text" value="${(settings.disabledRoles || []).join(',')}" placeholder="Role IDs (comma separated)" onchange="updateUtility('${command}', 'disabledRoles', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
+            <div class="setting-row"><span>Users:</span><input type="text" value="${(settings.users || []).join(',')}" placeholder="User IDs (comma separated)" onchange="updateUtility('${command}', 'users', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
+            <div class="setting-row"><span>Disabled Users:</span><input type="text" value="${(settings.disabledUsers || []).join(',')}" placeholder="User IDs (comma separated)" onchange="updateUtility('${command}', 'disabledUsers', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
+            <div class="setting-row"><span>Max Limit:</span><input type="number" value="${settings.maxLimit || 4}" style="width:80px;" onchange="updateUtility('${command}', 'maxLimit', parseInt(this.value))"></div>
+            <div class="setting-row"><span>Limit Window (ms):</span><input type="number" value="${settings.limitWindow || 600000}" style="width:100px;" onchange="updateUtility('${command}', 'limitWindow', parseInt(this.value))"></div>
             <div class="setting-row"><span>Custom Name:</span><input type="text" value="${settings.customName || ''}" placeholder="e.g. p, c, s" onchange="updateUtility('${command}', 'customName', this.value)"></div>
             <div class="setting-row"><span>Aliases:</span><input type="text" value="${(settings.aliases || []).join(',')}" placeholder="Aliases (comma separated)" onchange="updateUtility('${command}', 'aliases', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Enabled Roles:</span><input type="text" value="${(settings.enabledRoles || []).join(',')}" placeholder="Role IDs (comma separated)" onchange="updateUtility('${command}', 'enabledRoles', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Disabled Roles:</span><input type="text" value="${(settings.disabledRoles || []).join(',')}" placeholder="Role IDs (comma separated)" onchange="updateUtility('${command}', 'disabledRoles', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Enabled Channels:</span><input type="text" value="${(settings.enabledChannels || []).join(',')}" placeholder="Channel IDs (comma separated)" onchange="updateUtility('${command}', 'enabledChannels', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Disabled Channels:</span><input type="text" value="${(settings.disabledChannels || []).join(',')}" placeholder="Channel IDs (comma separated)" onchange="updateUtility('${command}', 'disabledChannels', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Max Limit:</span><input type="number" value="${settings.maxLimit || 4}" style="width:80px;" onchange="updateUtility('${command}', 'maxLimit', parseInt(this.value))"></div>
             <div class="setting-row"><span>Auto-Delete Message:</span><input type="checkbox" ${settings.autoDeleteMessage ? 'checked' : ''} onchange="updateUtility('${command}', 'autoDeleteMessage', this.checked)"></div>
             <div class="setting-row"><span>Auto-Delete Invocation:</span><input type="checkbox" ${settings.autoDeleteInvocation ? 'checked' : ''} onchange="updateUtility('${command}', 'autoDeleteInvocation', this.checked)"></div>
             <div class="setting-row"><span>Auto-Delete Reply:</span><input type="checkbox" ${settings.autoDeleteReply ? 'checked' : ''} onchange="updateUtility('${command}', 'autoDeleteReply', this.checked)"></div>
@@ -1010,6 +1216,39 @@ function renderUtility(data) {
 
 async function updateUtility(command, field, value) {
     try { await fetch(`${API_BASE}/utility/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command, field, value }) }); await fetchUtility(); } catch (e) { alert('Error'); }
+}
+
+// ==================== SAVE SECTION ====================
+async function saveSection(section) {
+    try {
+        const container = document.getElementById(`${section}Content`);
+        if (!container) return;
+        const inputs = container.querySelectorAll('input, select, textarea');
+        const data = {};
+        inputs.forEach(input => {
+            const field = input.getAttribute('data-field') || input.id || input.name;
+            if (field) {
+                if (input.type === 'checkbox') {
+                    data[field] = input.checked;
+                } else {
+                    data[field] = input.value;
+                }
+            }
+        });
+        const res = await fetch(`${API_BASE}/${section}/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            alert('✅ بە سەرکەوتوویی پاشەکەوت کرا!');
+        } else {
+            alert('❌ هەڵەیەک ڕوویدا لە کاتی پاشەکەوتکردن.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('❌ هەڵەیەک ڕوویدا.');
+    }
 }
 
 // ==================== NAVIGATION ====================
@@ -1024,30 +1263,34 @@ function showSection(id) {
 }
 
 // ==================== INIT ====================
-fetchStatus();
-fetchGeneral();
-fetchPremium();
-fetchAnalytics();
-fetchWhitelist();
-fetchAntiSpam();
-fetchAntiNuke();
-fetchBeastMode();
-fetchAntiRaid();
-fetchVerification();
-fetchModeration();
-fetchAutoRole();
-fetchLogs();
-fetchWelcome();
-fetchGoodbye();
-fetchReactionRoles();
-fetchInviteTracker();
-fetchLevels();
-fetchRoleLimits();
-fetchTickets();
-fetchGiveaways();
-fetchWarns();
-fetchGames();
-fetchAnnouncements();
-fetchColorRoles();
-fetchUtility();
-setInterval(fetchStatus, 10000);
+async function init() {
+    await fetchConfig();
+    await fetchStatus();
+    await fetchGeneral();
+    await fetchAnalytics();
+    await fetchWhitelist();
+    await fetchAntiSpam();
+    await fetchAntiNuke();
+    await fetchBeastMode();
+    await fetchAntiRaid();
+    await fetchVerification();
+    await fetchModeration();
+    await fetchAutoRole();
+    await fetchLogs();
+    await fetchWelcome();
+    await fetchGoodbye();
+    await fetchReactionRoles();
+    await fetchInviteTracker();
+    await fetchLevels();
+    await fetchRoleLimits();
+    await fetchTickets();
+    await fetchGiveaways();
+    await fetchWarns();
+    await fetchGames();
+    await fetchAnnouncements();
+    await fetchColorRoles();
+    await fetchUtility();
+    setInterval(fetchStatus, 10000);
+}
+
+init();

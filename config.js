@@ -10,148 +10,97 @@ token: process.env.TOKEN || '',
         "botActivityType": "WATCHING",
         "theme": "dark",
         "accentColor": "#fbbf24",
-        "language": "en"
+        "language": "ar"
     },
-    "premium": {
+    "games": {
         "enabled": true,
-        "tier": "platinum",
-        "tiers": {
-            "free": {
-                "name": "Free",
-                "color": "#94a3b8",
-                "features": []
-            },
-            "bronze": {
-                "name": "Bronze",
-                "color": "#cd7f32",
-                "features": [
-                    "customName",
-                    "aliases"
-                ]
-            },
-            "silver": {
-                "name": "Silver",
-                "color": "#c0c0c0",
-                "features": [
-                    "customName",
-                    "aliases",
-                    "analytics"
-                ]
-            },
-            "gold": {
-                "name": "Gold",
-                "color": "#ffd700",
-                "features": [
-                    "customName",
-                    "aliases",
-                    "analytics",
-                    "giveaway"
-                ]
-            },
-            "platinum": {
-                "name": "Platinum",
-                "color": "#e5e4e2",
-                "features": [
-                    "customName",
-                    "aliases",
-                    "analytics",
-                    "giveaway",
-                    "music"
-                ]
-            }
-        },
-        "ownerOverride": true,
-        "whitelistOverride": true
+        "channelId": null,
+        "trivia": true,
+        "wordle": true,
+        "truthordare": true,
+        "wouldyourather": true,
+        "showCorrectAnswer": true,
+        "showWrongAnswer": true,
+        "pointsPerWin": 10
     },
-    "analytics": {
+    "announcements": {
         "enabled": true,
-        "trackMessages": true,
-        "trackVoice": true,
-        "trackMembers": true,
-        "trackCommands": true,
-        "dailyReport": true,
-        "weeklyReport": true,
-        "monthlyReport": true,
-        "reportChannel": null,
-        "reportTime": "00:00"
+        "defaultChannel": null,
+        "mentionEveryone": false,
+        "embed": true,
+        "color": "#5865F2"
     },
-    "whitelist": {
-        "users": {
-            "all": [],
-            "ban": [],
-            "kick": [],
-            "botAdd": [],
-            "roleUpdate": [],
-            "roleAdd": [],
-            "channelCreate": [],
-            "channelDelete": [],
-            "roleCreate": [],
-            "roleDelete": [],
-            "inviteLink": [],
-            "prune": []
-        },
-        "roles": {
-            "all": [],
-            "ban": [],
-            "kick": [],
-            "botAdd": [],
-            "roleUpdate": [],
-            "roleAdd": [],
-            "channelCreate": [],
-            "channelDelete": [],
-            "roleCreate": [],
-            "roleDelete": [],
-            "inviteLink": [],
-            "prune": []
-        },
-        "channels": {
-            "all": [],
-            "inviteLink": [],
-            "channelDelete": []
-        }
-    },
-    "antiNuke": {
-        "enabled": true
-    },
-    "antiRaid": {
+    "moderation": {
         "enabled": true,
-        "joinRate": 5,
-        "timeWindow": 10000,
-        "punishment": "kick"
+        "logChannelId": null,
+        "muteRoleId": null
     },
-    "autoBan": {
-        "enabled": true
-    },
-    "beastMode": {
+    "tickets": {
         "enabled": false,
-        "actions": {
-            "ban": {
-                "max": 5,
-                "punishment": "kick"
-            },
-            "kick": {
-                "max": 5,
-                "punishment": "kick"
-            },
-            "channelDelete": {
-                "max": 3,
-                "punishment": "kick"
-            },
-            "roleDelete": {
-                "max": 3,
-                "punishment": "kick"
-            }
-        }
+        "categoryId": null,
+        "supportRoleId": null,
+        "logChannelId": null,
+        "maxTickets": 3,
+        "transcripts": true
+    },
+    "giveaways": {
+        "enabled": false,
+        "defaultDuration": 86400000,
+        "defaultWinners": 1,
+        "requiredRoleId": null,
+        "requiredLevel": 0
+    },
+    "colorRoles": {
+        "enabled": false,
+        "channelId": null,
+        "maxRoles": 1,
+        "allowMultiple": false,
+        "roles": {}
+    },
+    "warns": {
+        "enabled": true,
+        "autoPunish": true,
+        "maxWarns": 3,
+        "punishment": "timeout",
+        "logChannelId": null
+    },
+    "levels": {
+        "enabled": true,
+        "channelId": null,
+        "pointsPerMessage": 5,
+        "pointsPerVoice": 10,
+        "cooldown": 60000,
+        "levelUpChannel": null,
+        "levelUpMessage": "🎉 Congratulations {userMention}! You reached level {level}!",
+        "levelUpEmbed": true,
+        "levelUpColor": "#57F287",
+        "announceInDM": false,
+        "xpPerMessage": {
+            "min": 15,
+            "max": 25
+        },
+        "roles": {}
+    },
+    "autoRole": {
+        "enabled": false,
+        "roles": [],
+        "botRoles": [],
+        "delay": 0,
+        "ignoreBots": true,
+        "ignoreRoles": []
     },
     "logChannels": {
-        "memberBanned": null,
-        "memberUnbanned": null,
-        "memberKicked": null,
+        "general": null,
+        "moderation": null,
+        "security": null,
+        "member": null,
         "memberJoined": null,
         "memberLeft": null,
-        "nicknameChanged": null,
-        "memberRolesUpdated": null,
-        "memberTimeout": null,
+        "messageDeleted": null,
+        "messageEdited": null,
+        "voiceJoined": null,
+        "voiceLeft": null,
+        "voiceMoved": null,
         "channelCreated": null,
         "channelDeleted": null,
         "channelUpdated": null,
@@ -159,155 +108,46 @@ token: process.env.TOKEN || '',
         "roleCreated": null,
         "roleDeleted": null,
         "roleUpdated": null,
-        "rolePermissionsUpdated": null,
-        "roleGiven": null,
-        "roleRemoved": null,
-        "voiceJoined": null,
-        "voiceLeft": null,
-        "voiceMoved": null,
-        "voiceStateUpdated": null,
-        "voiceMicMuted": null,
-        "voiceMicUnmuted": null,
-        "voiceDeafened": null,
-        "voiceUndeafened": null,
-        "voiceStreamStarted": null,
-        "voiceStreamStopped": null,
-        "voiceCameraOn": null,
-        "voiceCameraOff": null,
-        "messageDeleted": null,
-        "messageEdited": null,
-        "serverUpdated": null,
-        "threadCreated": null,
-        "threadDeleted": null,
-        "threadUpdated": null,
-        "general": null
+        "memberBanned": null,
+        "memberUnbanned": null,
+        "nicknameChanged": null,
+        "serverUpdated": null
     },
-    "autoMod": {
-        "spam": {
-            "enabled": true,
-            "threshold": 5,
-            "window": 5000,
-            "punishment": "timeout",
-            "timeoutDuration": 60000
-        },
-        "duplicates": {
-            "enabled": true,
-            "threshold": 3,
-            "window": 10000,
-            "punishment": "timeout",
-            "timeoutDuration": 60000
-        },
-        "emoji": {
-            "enabled": true,
-            "max": 10,
-            "punishment": "delete",
-            "timeoutDuration": 30000
-        },
-        "mentions": {
-            "enabled": true,
-            "max": 5,
-            "punishment": "timeout",
-            "timeoutDuration": 120000
-        },
-        "caps": {
-            "enabled": true,
-            "max": 10,
-            "punishment": "delete"
-        },
-        "invites": {
-            "enabled": true,
-            "punishment": "delete"
-        },
-        "links": {
-            "enabled": true,
-            "allowedDomains": [
-                "youtube.com",
-                "twitter.com",
-                "github.com"
-            ],
-            "punishment": "delete"
-        },
-        "charRepeat": {
-            "enabled": true,
-            "max": 10,
-            "punishment": "delete"
-        },
-        "zalgo": {
-            "enabled": true,
-            "punishment": "delete"
-        },
-        "massMention": {
-            "enabled": true,
-            "max": 10,
-            "punishment": "kick"
-        },
-        "bannedWords": {
-            "enabled": true,
-            "words": [],
-            "punishment": "delete"
-        },
-        "personalInfo": {
-            "enabled": true,
-            "punishment": "delete"
-        },
-        "phishing": {
-            "enabled": true,
-            "punishment": "ban"
-        },
-        "nsfw": {
-            "enabled": true,
-            "punishment": "delete"
-        },
-        "stickerSpam": {
-            "enabled": true,
-            "max": 5,
-            "punishment": "delete",
-            "timeoutDuration": 30000
-        },
-        "attachmentSpam": {
-            "enabled": true,
-            "max": 3,
-            "punishment": "delete",
-            "timeoutDuration": 30000
-        },
-        "voiceSpam": {
-            "enabled": true,
-            "maxJoins": 3,
-            "window": 10000,
-            "punishment": "kick",
-            "timeoutDuration": 300000
-        },
-        "voiceConnectSpam": {
-            "enabled": true,
-            "maxConnects": 2,
-            "window": 5000,
-            "punishment": "timeout",
-            "timeoutDuration": 60000
-        },
-        "voiceMicSpam": {
-            "enabled": true,
-            "max": 5,
-            "punishment": "timeout",
-            "timeoutDuration": 60000
-        },
-        "voiceLiveSpam": {
-            "enabled": true,
-            "max": 3,
-            "punishment": "kick",
-            "timeoutDuration": 300000
-        },
-        "voiceJoinLeaveSpam": {
-            "enabled": true,
-            "max": 3,
-            "punishment": "kick",
-            "timeoutDuration": 300000
-        },
-        "voiceMoveSpam": {
-            "enabled": true,
-            "max": 3,
-            "punishment": "kick",
-            "timeoutDuration": 300000
-        }
+    "welcome": {
+        "enabled": false,
+        "channelId": null,
+        "message": "Welcome {userMention} to the server!",
+        "embed": false,
+        "color": "#5865F2",
+        "imageUrl": null,
+        "thumbnailUrl": null,
+        "footer": null,
+        "emoji": null
+    },
+    "goodbye": {
+        "enabled": false,
+        "channelId": null,
+        "message": "Goodbye {userMention}! We will miss you.",
+        "embed": false,
+        "color": "#ED4245",
+        "imageUrl": null,
+        "thumbnailUrl": null,
+        "footer": null,
+        "emoji": null
+    },
+    "reactionRoles": {
+        "enabled": false,
+        "roles": []
+    },
+    "inviteTracker": {
+        "enabled": false,
+        "channelId": null
+    },
+    "verification": {
+        "enabled": false,
+        "channelId": null,
+        "roleId": null,
+        "type": "button"
     },
     "securityLimits": {
         "ban": {
@@ -340,6 +180,16 @@ token: process.env.TOKEN || '',
             "max": 3,
             "punishment": "kick"
         },
+        "roleCreate": {
+            "enabled": true,
+            "max": 3,
+            "punishment": "kick"
+        },
+        "roleDelete": {
+            "enabled": true,
+            "max": 3,
+            "punishment": "kick"
+        },
         "mention": {
             "enabled": true,
             "max": 0,
@@ -353,38 +203,13 @@ token: process.env.TOKEN || '',
             "enabled": true,
             "punishment": "ban"
         },
-        "emojiDelete": {
+        "dangerousRolePermissions": {
             "enabled": true,
-            "max": 3,
             "punishment": "kick"
         },
-        "emojiRename": {
+        "dangerousRoleAdd": {
             "enabled": true,
-            "max": 3,
             "punishment": "kick"
-        },
-        "emojiCreate": {
-            "enabled": true,
-            "max": 3,
-            "punishment": "kick"
-        },
-        "inviteDelete": {
-            "enabled": true,
-            "max": 5,
-            "punishment": "kick"
-        },
-        "inviteCreate": {
-            "enabled": true,
-            "max": 5,
-            "punishment": "kick"
-        },
-        "inviteLink": {
-            "enabled": true,
-            "punishment": "detect"
-        },
-        "ghostPing": {
-            "enabled": true,
-            "punishment": "detect"
         },
         "vanityChange": {
             "enabled": true,
@@ -398,54 +223,233 @@ token: process.env.TOKEN || '',
             "enabled": true,
             "punishment": "kick"
         },
-        "webhookCreate": {
+        "roleRename": {
+            "enabled": true,
+            "punishment": "kick"
+        },
+        "channelRename": {
+            "enabled": true,
+            "punishment": "kick"
+        },
+        "channelTopicChange": {
+            "enabled": true,
+            "punishment": "kick"
+        },
+        "emojiCreate": {
+            "enabled": true,
+            "punishment": "kick"
+        },
+        "emojiDelete": {
+            "enabled": true,
+            "punishment": "kick"
+        },
+        "inviteDelete": {
+            "enabled": true,
+            "punishment": "kick"
+        },
+        "inviteLink": {
+            "enabled": true,
+            "punishment": "detect"
+        },
+        "ghostPing": {
+            "enabled": true,
+            "punishment": "detect"
+        },
+        "voiceSpam": {
             "enabled": true,
             "max": 3,
             "punishment": "kick"
         },
-        "webhookDelete": {
+        "voiceConnectSpam": {
             "enabled": true,
             "max": 3,
-            "punishment": "kick"
-        },
-        "webhookUpdate": {
+            "punishment": "timeout"
+        }
+    },
+    "antiRaid": {
+        "enabled": true,
+        "minAccountAge": 7,
+        "checkAvatar": true,
+        "checkUsername": true,
+        "joinRate": 5,
+        "timeWindow": 10000,
+        "punishment": "kick",
+        "ignoredUsers": [],
+        "ignoredRoles": []
+    },
+    "autoMod": {
+        "spam": {
             "enabled": true,
-            "max": 3,
-            "punishment": "kick"
+            "threshold": 5,
+            "window": 5000,
+            "punishment": "timeout"
         },
-        "threadCreate": {
+        "invites": {
+            "enabled": true,
+            "punishment": "delete"
+        },
+        "links": {
+            "enabled": true,
+            "allowedDomains": [
+                "youtube.com",
+                "twitter.com",
+                "github.com"
+            ],
+            "punishment": "delete"
+        },
+        "phishing": {
+            "enabled": true,
+            "punishment": "ban"
+        },
+        "bannedWords": {
+            "enabled": true,
+            "words": [],
+            "punishment": "delete"
+        },
+        "caps": {
+            "enabled": true,
+            "max": 10,
+            "punishment": "delete"
+        },
+        "emoji": {
+            "enabled": true,
+            "max": 10,
+            "punishment": "delete"
+        },
+        "mentions": {
             "enabled": true,
             "max": 5,
-            "punishment": "kick"
+            "punishment": "delete"
         },
-        "threadDelete": {
+        "duplicates": {
+            "enabled": true,
+            "threshold": 3,
+            "window": 10000,
+            "punishment": "timeout"
+        },
+        "zalgo": {
+            "enabled": true,
+            "punishment": "delete"
+        },
+        "charRepeat": {
+            "enabled": true,
+            "max": 10,
+            "punishment": "delete"
+        },
+        "personalInfo": {
+            "enabled": true,
+            "punishment": "delete"
+        },
+        "massMention": {
+            "enabled": true,
+            "punishment": "ban"
+        },
+        "stickerSpam": {
             "enabled": true,
             "max": 5,
+            "punishment": "timeout"
+        },
+        "attachmentSpam": {
+            "enabled": true,
+            "maxJoins": 3,
+            "window": 10000,
+            "punishment": "timeout"
+        },
+        "voiceSpam": {
+            "enabled": true,
+            "maxJoins": 3,
+            "window": 10000,
             "punishment": "kick"
         },
-        "stickerCreate": {
+        "voiceConnectSpam": {
             "enabled": true,
-            "max": 3,
-            "punishment": "kick"
+            "maxConnects": 2,
+            "window": 5000,
+            "punishment": "timeout"
         },
-        "stickerDelete": {
+        "voiceMuteSpam": {
+            "enabled": true,
+            "max": 5,
+            "punishment": "timeout"
+        },
+        "voiceDeafenSpam": {
+            "enabled": true,
+            "max": 5,
+            "punishment": "timeout"
+        },
+        "voiceJoinLeaveSpam": {
             "enabled": true,
             "max": 3,
-            "punishment": "kick"
+            "punishment": "timeout"
+        },
+        "voiceMoveSpam": {
+            "enabled": true,
+            "max": 3,
+            "punishment": "timeout"
+        }
+    },
+    "beastMode": {
+        "enabled": false,
+        "actions": {
+            "ban": {
+                "enabled": true,
+                "max": 5,
+                "punishment": "ban"
+            },
+            "kick": {
+                "enabled": true,
+                "max": 5,
+                "punishment": "ban"
+            },
+            "channelCreate": {
+                "enabled": true,
+                "max": 3,
+                "punishment": "ban"
+            },
+            "channelDelete": {
+                "enabled": true,
+                "max": 3,
+                "punishment": "ban"
+            },
+            "roleCreate": {
+                "enabled": true,
+                "max": 3,
+                "punishment": "ban"
+            },
+            "roleDelete": {
+                "enabled": true,
+                "max": 3,
+                "punishment": "ban"
+            },
+            "mention": {
+                "enabled": true,
+                "max": 3,
+                "punishment": "ban"
+            },
+            "botAdd": {
+                "enabled": true,
+                "max": 1,
+                "punishment": "ban"
+            }
         }
     },
     "roleLimits": {
-        "roleAdd": {
+        "ban": {
             "enabled": true,
             "max": 5,
             "punishment": "kick"
         },
-        "roleRemove": {
+        "kick": {
             "enabled": true,
             "max": 5,
             "punishment": "kick"
         },
-        "roleUpdate": {
+        "channelCreate": {
+            "enabled": true,
+            "max": 3,
+            "punishment": "kick"
+        },
+        "channelDelete": {
             "enabled": true,
             "max": 3,
             "punishment": "kick"
@@ -459,382 +463,431 @@ token: process.env.TOKEN || '',
             "enabled": true,
             "max": 3,
             "punishment": "kick"
-        },
-        "roleRename": {
-            "enabled": true,
-            "max": 3,
-            "punishment": "kick"
-        },
-        "dangerousRolePermission": {
-            "enabled": true,
-            "max": 1,
-            "punishment": "kick"
-        },
-        "dangerousRoleAdd": {
-            "enabled": true,
-            "max": 1,
-            "punishment": "kick"
-        },
-        "rolePositionUpdate": {
-            "enabled": true,
-            "max": 3,
-            "punishment": "kick"
-        },
-        "roleColorUpdate": {
-            "enabled": true,
-            "max": 5,
-            "punishment": "kick"
-        },
-        "roleHoistUpdate": {
-            "enabled": true,
-            "max": 5,
-            "punishment": "kick"
-        },
-        "roleMentionableUpdate": {
-            "enabled": true,
-            "max": 5,
-            "punishment": "kick"
-        },
-        "enabled": true
-    },
-    "verification": {
-        "enabled": false,
-        "channelId": null,
-        "roleId": null
-    },
-    "moderation": {
-        "enabled": true,
-        "logChannelId": null,
-        "muteRoleId": null
-    },
-    "autoRole": {
-        "enabled": false,
-        "roles": [],
-        "botRoles": [],
-        "delay": 0,
-        "ignoreBots": true,
-        "ignoreRoles": []
-    },
-    "welcome": {
-        "enabled": false,
-        "channelId": null,
-        "message": "%member_mention% Welcome to the server!",
-        "embed": false,
-        "color": "#5865F2",
-        "imageUrl": null,
-        "thumbnailUrl": null,
-        "footer": null,
-        "footerIcon": null,
-        "emoji": null,
-        "banner": {
-            "enabled": false,
-            "type": "normal",
-            "imageUrl": null
         }
     },
-    "goodbye": {
-        "enabled": false,
-        "channelId": null,
-        "message": "%member_name% has left the server.",
-        "embed": false,
-        "color": "#ED4245"
-    },
-    "reactionRoles": {
-        "enabled": false,
-        "roles": []
-    },
-    "inviteTracker": {
-        "enabled": false,
-        "channelId": null,
-        "message": "%member_mention% was invited by %inviter% and now has %inviter_invites% invites.",
-        "embed": false,
-        "color": "#57F287"
-    },
-    "levels": {
-        "enabled": true,
-        "xpPerMessage": {
-            "min": 15,
-            "max": 25
+    "whitelist": {
+        "users": {
+            "all": [],
+            "ban": [],
+            "kick": [],
+            "botAdd": [],
+            "roleUpdate": [],
+            "roleAdd": [],
+            "channelCreate": [],
+            "channelDelete": [],
+            "roleCreate": [],
+            "roleDelete": [],
+            "inviteLink": [],
+            "prune": [],
+            "limits": {}
         },
-        "cooldown": 60000,
-        "levelUpChannel": null,
-        "levelUpMessage": "🎉 %member_mention% has reached **Level %level%**!",
-        "levelUpEmbed": false,
-        "levelUpColor": "#57F287",
-        "announceInDM": false,
-        "roles": {},
-        "xpMultiplier": {},
-        "blacklistedChannels": [],
-        "blacklistedRoles": [],
-        "ignoredUsers": []
+        "roles": {
+            "all": [],
+            "ban": [],
+            "kick": [],
+            "botAdd": [],
+            "roleUpdate": [],
+            "roleAdd": [],
+            "channelCreate": [],
+            "channelDelete": [],
+            "roleCreate": [],
+            "roleDelete": [],
+            "inviteLink": [],
+            "prune": []
+        },
+        "channels": {
+            "all": [],
+            "inviteLink": [],
+            "channelDelete": []
+        }
     },
-    "tickets": {
-        "enabled": false,
-        "categoryId": null,
-        "supportRoleId": null,
-        "logChannelId": null,
-        "maxTickets": 3,
-        "autoClose": false,
-        "autoCloseTime": 86400000,
-        "transcripts": true,
-        "ticketMessage": "Thank you for creating a ticket. Our support team will be with you shortly."
-    },
-    "giveaways": {
-        "enabled": false,
-        "defaultDuration": 86400000,
-        "defaultWinners": 1,
-        "requireRole": null,
-        "requireLevel": 0,
-        "bonusRoles": {},
-        "blacklistedRoles": [],
-        "giveawayChannel": null
-    },
-    "warns": {
-        "enabled": true,
-        "autoPunish": true,
-        "maxWarns": 3,
-        "punishment": "timeout",
-        "warnExpiry": 604800000,
-        "logChannelId": null,
-        "allowAppeal": false
-    },
-    "games": {
-        "enabled": true,
-        "channelId": "1551638376745275502",
-        "trivia": true,
-        "wordle": true,
-        "truthordare": true,
-        "wouldyourather": true,
-        "showCorrectAnswer": true,
-        "showWrongAnswer": true,
-        "pointsPerWin": "1"
-    },
-    "announcements": {
-        "enabled": true,
-        "defaultChannel": null,
-        "mentionEveryone": false,
-        "embed": true,
-        "color": "#5865F2"
-    },
-    "colorRoles": {
-        "enabled": false,
-        "channelId": null,
-        "roles": {},
-        "maxRoles": 1,
-        "allowMultiple": false
+    "autoBan": {
+        "enabled": true
     },
     "utility": {
         "ping": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
-        "server": {
+        "serverinfo": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
-        "user": {
+        "userinfo": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
         "avatar": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
-        "roles": {
+        "poll": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
-        "moveme": {
+        "say": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "help": {
+            "enabled": true,
+            "channels": [],
             "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
             "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "invite": {
+            "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "server": {
+            "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "user": {
+            "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "about": {
+            "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
         "credits": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
         "daily": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
-        "vote": {
+        "move": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
-            "autoDeleteMessage": false,
-            "autoDeleteInvocation": false,
-            "autoDeleteReply": false
-        },
-        "rep": {
-            "enabled": true,
-            "customName": "",
-            "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
-            "autoDeleteMessage": false,
-            "autoDeleteInvocation": false,
-            "autoDeleteReply": false
-        },
-        "points": {
-            "enabled": true,
-            "customName": "",
-            "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
         "profile": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "rep": {
+            "enabled": true,
+            "channels": [],
             "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
             "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "roles": {
+            "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
         "roll": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
         "short": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
-        "kick": {
+        "vote": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
-            "disabledChannels": [],
-            "maxLimit": 4,
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         },
-        "ban": {
+        "rank": {
             "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
             "customName": "",
             "aliases": [],
-            "enabledRoles": [],
-            "disabledRoles": [],
-            "enabledChannels": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "leaderboard": {
+            "enabled": true,
+            "channels": [],
             "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
             "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "reactionrole": {
+            "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
+            "autoDeleteMessage": false,
+            "autoDeleteInvocation": false,
+            "autoDeleteReply": false
+        },
+        "logs": {
+            "enabled": true,
+            "channels": [],
+            "disabledChannels": [],
+            "roles": [],
+            "disabledRoles": [],
+            "users": [],
+            "disabledUsers": [],
+            "maxLimit": 4,
+            "limitWindow": 600000,
+            "customName": "",
+            "aliases": [],
             "autoDeleteMessage": false,
             "autoDeleteInvocation": false,
             "autoDeleteReply": false
         }
-    },
-    "antiSpam": {
-        "enabled": true
-    },
-    "permissions": {}
+    }
 };
