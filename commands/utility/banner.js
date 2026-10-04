@@ -2,8 +2,8 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('avatar')
-        .setDescription('وێنەی پرۆفایلی بەکارهێنەر ببینە')
+        .setName('banner')
+        .setDescription('بانەری بەکارهێنەر ببینە')
         .addUserOption(option =>
             option.setName('user')
                 .setDescription('بەکارهێنەر')
@@ -11,10 +11,14 @@ module.exports = {
     async execute(interaction, client, config) {
         const user = interaction.options.getUser('user') || interaction.user;
         try {
+            const fetchedUser = await client.users.fetch(user.id, { force: true });
+            if (!fetchedUser.banner) {
+                return interaction.reply({ content: '❌ ئەم بەکارهێنەرە هیچ بانەرێکی نییە.', ephemeral: true });
+            }
             const embed = new EmbedBuilder()
                 .setColor('#5865F2')
-                .setTitle(`🖼️ ئەڤاتاری ${user.username}`)
-                .setImage(user.displayAvatarURL({ dynamic: true, size: 1024 }))
+                .setTitle(`🖼️ بانەری ${user.username}`)
+                .setImage(fetchedUser.bannerURL({ dynamic: true, size: 1024 }))
                 .setTimestamp();
             return interaction.reply({ embeds: [embed] });
         } catch (error) {

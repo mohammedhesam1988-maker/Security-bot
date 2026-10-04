@@ -2,12 +2,12 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('softban')
-        .setDescription('بانی نەرم (کیک + سڕینەوەی نامەکان)')
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+        .setName('mutetext')
+        .setDescription('بێدەنگکردنی دەقی ئەندامێک')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
         .addUserOption(opt =>
             opt.setName('user')
-                .setDescription('ئەو بەکارهێنەرەی کە دەتەوێت بانی بکەیت')
+                .setDescription('ئەو بەکارهێنەرەی کە دەتەوێت بێدەنگی بکەیت')
                 .setRequired(true))
         .addStringOption(opt =>
             opt.setName('reason')
@@ -18,12 +18,11 @@ module.exports = {
         const reason = interaction.options.getString('reason') || 'هیچ هۆکارێک نەدراوە';
         const member = await interaction.guild.members.fetch(user.id);
         try {
-            await member.ban({ reason, deleteMessageSeconds: 604800 });
-            await interaction.guild.members.unban(user.id, 'Softban');
-            return interaction.reply({ content: `✅ **${user.tag}** بانی نەرم کرا. هۆکار: ${reason}`, ephemeral: true });
+            await member.timeout(10 * 60 * 1000, reason);
+            return interaction.reply({ content: `✅ **${user.tag}** بێدەنگکرا لە دەق بۆ ١٠ خولەک.`, ephemeral: true });
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: '❌ ناتوانم ئەندامەکە بانی نەرم بکەم.', ephemeral: true });
+            return interaction.reply({ content: '❌ ناتوانم ئەندامەکە بێدەنگ بکەم.', ephemeral: true });
         }
     }
 };

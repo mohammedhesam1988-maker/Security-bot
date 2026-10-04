@@ -2,18 +2,15 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('roles')
-        .setDescription('لیستی ڕۆڵەکانی سێرڤەر و ئەندامەکان ببینە'),
+        .setName('commands')
+        .setDescription('لیستی هەموو ئەو فەرمانانەی کە بۆتەکە پێشکەشی دەکات'),
     async execute(interaction, client, config) {
         try {
-            const roles = interaction.guild.roles.cache
-                .sort((a, b) => b.position - a.position)
-                .map(r => r.toString())
-                .join(', ');
+            const commands = client.commands.map(cmd => `\`/${cmd.data.name}\``).join(', ');
             const embed = new EmbedBuilder()
                 .setColor('#5865F2')
-                .setTitle('🎭 ڕۆڵەکانی سێرڤەر')
-                .setDescription(roles || 'هیچ ڕۆڵێک نییە.')
+                .setTitle('📜 لیستی هەموو کۆماندەکان')
+                .setDescription(commands || 'هیچ کۆماندێک نییە.')
                 .setTimestamp();
             return interaction.reply({ embeds: [embed], ephemeral: true });
         } catch (error) {

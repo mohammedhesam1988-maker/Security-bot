@@ -4,13 +4,13 @@ module.exports = {
     name: 'interactionCreate',
     once: false,
     async execute(interaction, client, config) {
-        // ==================== SLASH COMMANDS ====================
+        // ================= SLASH COMMANDS =================
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (!command) return;
 
-            // ==================== پشکنینی چانێل و ڕۆڵ و سنوور ====================
-            const { checkChannel, checkRoles, checkLimit } = require('../handlers/commandHandler.js');
+            // ================= چێککردنی فەرمانەکان =================
+            const { checkChannel, checkRoles, checkLimit, checkWhitelistLimit } = require('../handlers/commandHandler.js');
 
             const channelCheck = await checkChannel(interaction, interaction.commandName, config);
             if (!channelCheck) return;
@@ -21,8 +21,8 @@ module.exports = {
             const limitCheck = await checkLimit(interaction, interaction.commandName, config);
             if (!limitCheck) return;
 
-           const whitelistCheck = await checkWhitelistLimit(interaction, interaction.commandName, config);
-           if (!whitelistCheck) return;
+            const whitelistCheck = await checkWhitelistLimit(interaction, interaction.commandName, config);
+            if (!whitelistCheck) return;
 
             try {
                 await command.execute(interaction, client, config);
@@ -34,7 +34,7 @@ module.exports = {
             }
         }
 
-        // ==================== AUTOCOMPLETE ====================
+        // ================= AUTOCOMPLETE =================
         if (interaction.isAutocomplete()) {
             const command = client.commands.get(interaction.commandName);
             if (!command || !command.autocomplete) return;
@@ -45,7 +45,7 @@ module.exports = {
             }
         }
 
-        // ==================== BUTTONS ====================
+        // ================= BUTTONS =================
         if (interaction.isButton()) {
             try {
                 const customId = interaction.customId;
@@ -60,7 +60,7 @@ module.exports = {
                     await closeTicket(interaction, config);
                 }
 
-                // ==================== GIVEAWAY JOIN ====================
+                // ================= GIVEAWAY JOIN =================
                 if (customId === 'giveaway_join') {
                     const giveaway = await Giveaway.findOne({
                         guildId: interaction.guild.id,
@@ -70,14 +70,14 @@ module.exports = {
 
                     if (!giveaway) {
                         return interaction.reply({
-                            content: '❌ خەڵاتکردنەکە کۆتاییهاتووە.',
+                            content: '❌ ئەم خەڵاتە کۆتایی هاتووە.',
                             ephemeral: true
                         }).catch(() => {});
                     }
 
                     if (giveaway.participants.includes(interaction.user.id)) {
                         return interaction.reply({
-                            content: '❌ تۆ پێشتر بەشداریت کردووە!',
+                            content: '❌ تۆ بەشداربوویت.',
                             ephemeral: true
                         }).catch(() => {});
                     }
@@ -86,7 +86,7 @@ module.exports = {
                     await giveaway.save();
 
                     await interaction.reply({
-                        content: '✅ بە سەرکەوتوویی بەشداریت کرد!',
+                        content: '✅ بە سەرکەوتوویی بەشداربوویت.',
                         ephemeral: true
                     }).catch(() => {});
                 }
@@ -95,18 +95,18 @@ module.exports = {
             }
         }
 
-        // ==================== SELECT MENUS ====================
+        // ================= SELECT MENUS =================
         if (interaction.isStringSelectMenu()) {
             try {
                 const customId = interaction.customId;
 
-                // ==================== REACTION ROLES ====================
+                // ================= REACTION ROLES =================
                 if (customId.startsWith('reactionrole_')) {
                     const roleId = interaction.values[0];
                     const role = interaction.guild.roles.cache.get(roleId);
 
                     if (role) {
-                        if (interaction.member.roles.cache.has(roleId)) {
+                        if (interaction.member.roles.cache.has(role.id)) {
                             await interaction.member.roles.remove(role).catch(() => {});
                             await interaction.reply({ content: `❌ Removed role: ${role.name}`, ephemeral: true }).catch(() => {});
                         } else {
@@ -116,7 +116,7 @@ module.exports = {
                     }
                 }
 
-                // ==================== COLOR ROLES ====================
+                // ================= COLOR ROLES =================
                 if (customId === 'colorrole_select') {
                     const roleId = interaction.values[0];
                     const role = interaction.guild.roles.cache.get(roleId);
@@ -128,7 +128,7 @@ module.exports = {
                     const settings = await Settings.findOne({ guildId: interaction.guild.id });
                     const existingRoles = Object.values(settings?.colorRoles?.roles || {});
 
-                    // سڕینەوەی ڕۆڵەکانی پێشوو
+                    // سڕینەوەی ڕۆڵە کۆنەکان
                     for (const existingRoleId of existingRoles) {
                         if (interaction.member.roles.cache.has(existingRoleId)) {
                             await interaction.member.roles.remove(existingRoleId).catch(() => {});
@@ -137,14 +137,14 @@ module.exports = {
 
                     // زیادکردنی ڕۆڵی نوێ
                     await interaction.member.roles.add(role).catch(() => {});
-                    await interaction.reply({ content: `✅ ڕەنگەکەت گۆڕدرا بۆ: **${role.name}**`, ephemeral: true }).catch(() => {});
+                    await interaction.reply({ content: `✅ ڕۆڵی ڕەنگ زیادکرا: **${role.name}**`, ephemeral: true }).catch(() => {});
                 }
             } catch (error) {
                 console.error(`Select Menu Error: ${error.message}`);
             }
         }
 
-        // ==================== MODALS ====================
+        // ================= MODALS =================
         if (interaction.isModalSubmit()) {
             try {
                 console.log(`Modal Submitted: ${interaction.customId}`);

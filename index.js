@@ -8,12 +8,12 @@ const config = require('./config.js');
 const { startDashboard } = require('./dashboard/server');
 const { startDailyReport } = require('./handlers/dailyReport');
 
-// ==================== MONGODB CONNECTION ====================
+// ================= MONGODB CONNECTION =================
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/securitybot')
     .then(() => console.log('✅ MongoDB connected'))
     .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// ==================== CLIENT ====================
+// ================= CLIENT =================
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -28,35 +28,45 @@ const client = new Client({
     partials: [Partials.Channel, Partials.Message, Partials.GuildMember, Partials.User]
 });
 
-// ==================== COMMANDS ====================
+// ================= COMMANDS =================
 client.commands = new Collection();
 const commandsArray = [];
-
 const commandFolders = fs.readdirSync('./commands').filter(f => fs.statSync(`./commands/${f}`).isDirectory());
+
 for (const folder of commandFolders) {
     const commandFiles = fs.readdirSync(`./commands/${folder}`).filter(f => f.endsWith('.js'));
     for (const file of commandFiles) {
-        const command = require(`./commands/${folder}/${file}`);
-        if (command.data && command.execute) {
-            client.commands.set(command.data.name, command);
-            commandsArray.push(command.data.toJSON());
+        try {
+            const command = require(`./commands/${folder}/${file}`);
+            if (command.data && command.execute) {
+                // چێککردنی دووبارەبوونەوە
+                if (client.commands.has(command.data.name)) {
+                    console.warn(`⚠️ کۆماندی دووبارە دۆزرایەوە: ${command.data.name} لە ${folder}/${file} - پشتگوێ خرا`);
+                    continue;
+                }
+                client.commands.set(command.data.name, command);
+                commandsArray.push(command.data.toJSON());
+            }
+        } catch (error) {
+            console.error(`❌ هەڵە لە خوێندنەوەی فایلی ${folder}/${file}:`, error.message);
         }
     }
 }
 
-// ==================== EVENTS ====================
+// ================= EVENTS =================
 const eventFiles = fs.readdirSync('./events').filter(f => f.endsWith('.js'));
 for (const file of eventFiles) {
     const event = require(`./events/${file}`);
-    if (!event.name) continue;
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args, client, config));
-    } else {
-        client.on(event.name, (...args) => event.execute(...args, client, config));
+    if (event.name && event.execute) {
+        if (event.once) {
+            client.once(event.name, (...args) => event.execute(...args, client, config));
+        } else {
+            client.on(event.name, (...args) => event.execute(...args, client, config));
+        }
     }
 }
 
-// ==================== READY ====================
+// ================= READY =================
 client.once('clientReady', async () => {
     console.log(`✅ ${client.user.tag} is online!`);
 
@@ -72,5 +82,5 @@ client.once('clientReady', async () => {
     startDashboard(client, config);
 });
 
-// ==================== LOGIN ====================
+// ================= LOGIN =================
 client.login(process.env.TOKEN);
