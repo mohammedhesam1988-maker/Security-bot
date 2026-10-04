@@ -7,6 +7,8 @@ const path = require('path');
 const config = require('./config.js');
 const { startDashboard } = require('./dashboard/server');
 const { startDailyReport } = require('./handlers/dailyReport');
+const triggerHandler = require('./handlers/triggerHandler');
+const { startRiskDecay } = require('./handlers/riskManager');
 
 // ================= MONGODB CONNECTION =================
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/securitybot')
@@ -66,6 +68,17 @@ for (const file of eventFiles) {
     }
 }
 
+// ================= TRIGGERS =================
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+    if (!message.guild) return;
+    try {
+        await triggerHandler.checkTrigger(message, client, config);
+    } catch (error) {
+        console.error('Trigger Error:', error);
+    }
+});
+
 // ================= READY =================
 client.once('clientReady', async () => {
     console.log(`✅ ${client.user.tag} is online!`);
@@ -80,6 +93,7 @@ client.once('clientReady', async () => {
 
     startDailyReport(client);
     startDashboard(client, config);
+    startRiskDecay(client);
 });
 
 // ================= LOGIN =================

@@ -1,9 +1,9 @@
 const { EmbedBuilder } = require('discord.js');
 
-// ==================== خاڵبەندی بۆ هاتنی ئەندامان ====================
+// ================= سیستەمی چاودێری =================
 const joinCache = new Map();
 
-// ==================== پشکنینی لیستی سپی ====================
+// ================= چێککردنی لیستی سپی =================
 function isWhitelisted(member, config) {
     if (!member) return false;
     if (member.id === member.guild.ownerId) return true;
@@ -14,43 +14,41 @@ function isWhitelisted(member, config) {
     return false;
 }
 
-// ==================== پشکنینی هێرش ====================
+// ================= چێککردنی هێرش =================
 async function checkRaid(guild, member, config) {
     try {
         if (!config.antiRaid || !config.antiRaid.enabled) return false;
-
-        // پشکنینی لیستی سپی
         if (isWhitelisted(member, config)) return false;
 
         const now = Date.now();
         const key = guild.id;
 
-        // ==================== پشکنینی تەمەنی ئەکاونت ====================
+        // ================= تەمەنی ئەکاونت =================
         const accountAge = now - member.user.createdTimestamp;
         const minAge = (config.antiRaid.minAccountAge || 7) * 24 * 60 * 60 * 1000;
 
         if (accountAge < minAge) {
-            await punish(guild, member, 'ئەکاونتی نوێ', config);
+            await punish(guild, member, 'سەلماندنی ئەکاونت', config);
             return true;
         }
 
-        // ==================== پشکنینی وێنەی پرۆفایل ====================
+        // ================= پشکنینی وێنە =================
         if (config.antiRaid.checkAvatar !== false && !member.user.avatar) {
-            await punish(guild, member, 'وێنەی پرۆفایلی نییە', config);
+            await punish(guild, member, 'بەبێ وێنەی پرۆفایل', config);
             return true;
         }
 
-        // ==================== پشکنینی ناوی بەکارهێنەر ====================
+        // ================= پشکنینی ناو =================
         if (config.antiRaid.checkUsername !== false) {
             const username = member.user.username;
-            const suspiciousPattern = /^[a-z]{5,}\d{4,}$|^\d{5,}$/i;
+            const suspiciousPattern = /^[a-z]{5,}\d{3,5}$/i;
             if (suspiciousPattern.test(username)) {
-                await punish(guild, member, 'ناوی بەکارهێنەری گوماناویی', config);
+                await punish(guild, member, 'ناوی گوماناوی', config);
                 return true;
             }
         }
 
-        // ==================== پشکنینی خێرایی هاتن ====================
+        // ================= چێککردنی هاتنەژوورەوە =================
         if (!joinCache.has(key)) joinCache.set(key, []);
         const joins = joinCache.get(key);
         joins.push({ id: member.id, time: now });
@@ -74,10 +72,10 @@ async function checkRaid(guild, member, config) {
     }
 }
 
-// ==================== سزادان ====================
+// ================= سزادان =================
 async function punish(guild, member, reason, config) {
     try {
-        const action = config.antiRaid.action || 'kick';
+        const action = config.antiRaid.punishment || 'kick';
 
         if (action === 'kick' && member.kickable) {
             await member.kick(reason).catch(() => {});
@@ -85,17 +83,16 @@ async function punish(guild, member, reason, config) {
             await member.ban({ reason }).catch(() => {});
         }
 
-        // تۆمارکردن
+        // ================= لۆگ =================
         const logChannelId = config.logChannels?.security || config.logChannels?.general;
         const logChannel = logChannelId ? guild.channels.cache.get(logChannelId) : null;
 
         if (logChannel) {
             const embed = new EmbedBuilder()
                 .setColor('#ED4245')
-                .setTitle('🚨 Anti-Raid: ئەندامی گوماناویی')
+                .setTitle('🚨 Anti-Raid: ئەندام سزا درا')
                 .setDescription(`**ئەندام:** <@${member.id}>\n**ناو:** ${member.user.tag}\n**هۆکار:** ${reason}\n**سزا:** ${action}`)
                 .setTimestamp();
-
             await logChannel.send({ embeds: [embed] }).catch(() => {});
         }
     } catch (e) {
@@ -103,29 +100,28 @@ async function punish(guild, member, reason, config) {
     }
 }
 
-// ==================== داخستنی سێرڤەر ====================
+// ================= داخستن =================
 async function lockdown(guild, config) {
     try {
-        // ڕێگری لە هاتنی ئەندامی نوێ
+        // بەرزکردنەوەی ئاستی پاراستن
         await guild.setVerificationLevel(4).catch(() => {});
 
-        // ئاگادارکردنەوەی خاوەن
-        const owner = await guild.fetchOwner();
+        // ئاگادارکردنی خاوەن
+        const owner = await guild.fetchOwner().catch(() => null);
         if (owner) {
-            await owner.send('🚨 **هێرش!** سێرڤەرەکە بە شێوەی خۆکار داخرا. تکایە دەستبەجێ بڕۆ بۆ سێرڤەرەکە.').catch(() => {});
+            await owner.send(`🚨 هێرش دۆزرایەوە لە ${guild.name}! چانێلەکان داخراون.`).catch(() => {});
         }
 
-        // تۆمارکردن
+        // ================= لۆگ =================
         const logChannelId = config.logChannels?.security || config.logChannels?.general;
         const logChannel = logChannelId ? guild.channels.cache.get(logChannelId) : null;
 
         if (logChannel) {
             const embed = new EmbedBuilder()
                 .setColor('#ED4245')
-                .setTitle('🚨 Anti-Raid: داخستنی سێرڤەر')
-                .setDescription('سێرڤەرەکە بە شێوەی خۆکار داخرا بەهۆی گومانی هێرش.')
+                .setTitle('🚨 Anti-Raid: هێرش دۆزرایەوە')
+                .setDescription('چانێلەکان داخراون. تکایە دەستبەجێ ئەندامە گوماناوییەکان لابەرە.')
                 .setTimestamp();
-
             await logChannel.send({ embeds: [embed] }).catch(() => {});
         }
     } catch (e) {
@@ -133,7 +129,7 @@ async function lockdown(guild, config) {
     }
 }
 
-// ==================== کردنەوەی سێرڤەر ====================
+// ================= کردنەوە =================
 async function unlockServer(guild) {
     try {
         await guild.setVerificationLevel(0).catch(() => {});

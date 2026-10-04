@@ -1,404 +1,265 @@
 <!DOCTYPE html>
-<html lang="ku" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Bot Dashboard</title>
-    
-    <!-- فۆنتی Poppins -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- ئایکۆنەکانی Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- فایلی CSS -->
+    <title>Security Bot - Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body data-theme="dark">
 
-    <!-- ==================== SIDEBAR ==================== -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <span class="status-dot"></span>
-            <h1>🛡️ Security Bot</h1>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <i class="fas fa-shield-halved"></i>
+            <h1>Security Bot</h1>
+            <div class="loading-spinner"></div>
+            <p>Loading Dashboard...</p>
         </div>
-        <nav class="sidebar-nav">
-            <a href="#" class="nav-item active" onclick="showSection('general')">
-                <i class="fas fa-home"></i>
-                <span>گشتی</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('analytics')">
-                <i class="fas fa-chart-line"></i>
-                <span>شیکاری</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('whitelist')">
-                <i class="fas fa-list"></i>
-                <span>لیستی سپی</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('antispam')">
-                <i class="fas fa-shield-alt"></i>
-                <span>دژە سپام</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('antinuke')">
-                <i class="fas fa-bomb"></i>
-                <span>دژە تێکدان</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('beastmode')">
-                <i class="fas fa-fire"></i>
-                <span>Beast Mode</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('antiraid')">
-                <i class="fas fa-user-shield"></i>
-                <span>دژە هێرش</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('verification')">
-                <i class="fas fa-check-circle"></i>
-                <span>پشتڕاستکردنەوە</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('moderation')">
-                <i class="fas fa-gavel"></i>
-                <span>سەرپەرشتیکردن</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('autorole')">
-                <i class="fas fa-user-tag"></i>
-                <span>ڕۆڵی خۆکار</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('logs')">
-                <i class="fas fa-file-alt"></i>
-                <span>تۆمارەکان</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('levels')">
-                <i class="fas fa-trophy"></i>
-                <span>ئاستەکان</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('rolelimits')">
-                <i class="fas fa-users-cog"></i>
-                <span>سنووری ڕۆڵ</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('welcome')">
-                <i class="fas fa-hand-peace"></i>
-                <span>بەخێرهاتن</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('goodbye')">
-                <i class="fas fa-hand-wave"></i>
-                <span>ماڵئاوا</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('reactionroles')">
-                <i class="fas fa-smile"></i>
-                <span>ڕۆڵی کاردانەوە</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('invitetracker')">
-                <i class="fas fa-envelope"></i>
-                <span>چاودێری بانگهێشت</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('tickets')">
-                <i class="fas fa-ticket-alt"></i>
-                <span>تیکتەکان</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('giveaways')">
-                <i class="fas fa-gift"></i>
-                <span>خەڵاتکردن</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('warns')">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>ئاگادارییەکان</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('games')">
-                <i class="fas fa-gamepad"></i>
-                <span>یارییەکان</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('announcements')">
-                <i class="fas fa-bullhorn"></i>
-                <span>ڕاگەیاندنەکان</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('colorroles')">
-                <i class="fas fa-palette"></i>
-                <span>ڕۆڵی ڕەنگ</span>
-            </a>
-            <a href="#" class="nav-item" onclick="showSection('utility')">
-                <i class="fas fa-tools"></i>
-                <span>ئامرازەکان</span>
-            </a>
-        </nav>
-    </aside>
+    </div>
 
-    <!-- ==================== MAIN CONTENT ==================== -->
-    <main class="main-content">
-        <header class="header">
-            <h1 id="pageTitle">گشتی</h1>
-            <div class="status-badge" id="statusBadge">
-                <span class="status-dot"></span>
-                <span id="statusText">Checking...</span>
-            </div>
-        </header>
+    <!-- Main App -->
+    <div class="app" id="app" style="display:none;">
 
-        <!-- ==================== SECTIONS ==================== -->
-        <section id="general" class="section active">
-            <div class="section-header">
-                <h2>⚙️ ڕێکخستنی گشتی</h2>
-                <p>ڕێکخستنی بنەڕەتی بۆتەکە</p>
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-shield-halved"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-title">Security Bot</span>
+                        <span class="logo-subtitle">Dashboard v7.0</span>
+                    </div>
+                </div>
+                <div class="status-badge" id="statusBadge">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Checking...</span>
+                </div>
             </div>
-            <div class="item-box">
-                <h4>📝 زانیاری بۆت</h4>
-                <div id="generalContent"></div>
-            </div>
-        </section>
 
-        <section id="analytics" class="section">
-            <div class="section-header">
-                <h2>📊 شیکاری</h2>
-                <p>ئاماری سێرڤەر</p>
-            </div>
-            <div class="item-box">
-                <h4>📈 ئامارەکان</h4>
-                <div id="analyticsContent"></div>
-            </div>
-        </section>
+            <nav class="sidebar-nav">
+                <a href="#general" class="nav-item active" data-section="general">
+                    <div class="nav-icon"><i class="fas fa-home"></i></div>
+                    <span class="nav-label">General</span>
+                </a>
+                <a href="#analytics" class="nav-item" data-section="analytics">
+                    <div class="nav-icon"><i class="fas fa-chart-line"></i></div>
+                    <span class="nav-label">Analytics</span>
+                </a>
+                <a href="#whitelist" class="nav-item" data-section="whitelist">
+                    <div class="nav-icon"><i class="fas fa-list-check"></i></div>
+                    <span class="nav-label">Whitelist</span>
+                </a>
 
-        <section id="whitelist" class="section">
-            <div class="section-header">
-                <h2>📋 لیستی سپی</h2>
-                <p>لیستی ڕێپێدراوەکان</p>
-            </div>
-            <div class="item-box">
-                <h4>👥 بەکارهێنەران</h4>
-                <div id="whitelistContent"></div>
-            </div>
-        </section>
+                <div class="nav-divider"></div>
+                <div class="nav-section-title">Protection</div>
 
-        <section id="antispam" class="section">
-            <div class="section-header">
-                <h2>🛡️ دژە سپام</h2>
-                <p>ڕێکخستنی دژە سپام</p>
-            </div>
-            <div class="item-box">
-                <h4>🛡️ ڕێکخستنەکان</h4>
-                <div id="antispamContent"></div>
-            </div>
-        </section>
+                <a href="#antispam" class="nav-item" data-section="antispam">
+                    <div class="nav-icon"><i class="fas fa-shield-virus"></i></div>
+                    <span class="nav-label">Anti-Spam</span>
+                </a>
+                <a href="#antinuke" class="nav-item" data-section="antinuke">
+                    <div class="nav-icon"><i class="fas fa-bomb"></i></div>
+                    <span class="nav-label">Anti-Nuke</span>
+                </a>
+                <a href="#beastmode" class="nav-item" data-section="beastmode">
+                    <div class="nav-icon"><i class="fas fa-dragon"></i></div>
+                    <span class="nav-label">Beast Mode</span>
+                </a>
+                <a href="#antiraid" class="nav-item" data-section="antiraid">
+                    <div class="nav-icon"><i class="fas fa-users-slash"></i></div>
+                    <span class="nav-label">Anti-Raid</span>
+                </a>
+                <a href="#verification" class="nav-item" data-section="verification">
+                    <div class="nav-icon"><i class="fas fa-user-check"></i></div>
+                    <span class="nav-label">Verification</span>
+                </a>
 
-        <section id="antinuke" class="section">
-            <div class="section-header">
-                <h2>💣 دژە تێکدان</h2>
-                <p>ڕێکخستنی دژە تێکدان</p>
-            </div>
-            <div class="item-box">
-                <h4>💣 ڕێکخستنەکان</h4>
-                <div id="antinukeContent"></div>
-            </div>
-        </section>
+                <div class="nav-divider"></div>
+                <div class="nav-section-title">Management</div>
 
-        <section id="beastmode" class="section">
-            <div class="section-header">
-                <h2>🔥 Beast Mode</h2>
-                <p>دۆخی دڕندە</p>
-            </div>
-            <div class="item-box">
-                <h4>🔥 ڕێکخستنەکان</h4>
-                <div id="beastmodeContent"></div>
-            </div>
-        </section>
+                <a href="#moderation" class="nav-item" data-section="moderation">
+                    <div class="nav-icon"><i class="fas fa-gavel"></i></div>
+                    <span class="nav-label">Moderation</span>
+                </a>
+                <a href="#autorole" class="nav-item" data-section="autorole">
+                    <div class="nav-icon"><i class="fas fa-user-tag"></i></div>
+                    <span class="nav-label">Auto Role</span>
+                </a>
+                <a href="#logs" class="nav-item" data-section="logs">
+                    <div class="nav-icon"><i class="fas fa-file-lines"></i></div>
+                    <span class="nav-label">Logs</span>
+                </a>
+                <a href="#levels" class="nav-item" data-section="levels">
+                    <div class="nav-icon"><i class="fas fa-trophy"></i></div>
+                    <span class="nav-label">Levels</span>
+                </a>
+                <a href="#rolelimits" class="nav-item" data-section="rolelimits">
+                    <div class="nav-icon"><i class="fas fa-users-gear"></i></div>
+                    <span class="nav-label">Role Limits</span>
+                </a>
 
-        <section id="antiraid" class="section">
-            <div class="section-header">
-                <h2>🛡️ دژە هێرش</h2>
-                <p>ڕێکخستنی دژە هێرش</p>
-            </div>
-            <div class="item-box">
-                <h4>🛡️ ڕێکخستنەکان</h4>
-                <div id="antiraidContent"></div>
-            </div>
-        </section>
+                <div class="nav-divider"></div>
+                <div class="nav-section-title">System</div>
 
-        <section id="verification" class="section">
-            <div class="section-header">
-                <h2>✅ پشتڕاستکردنەوە</h2>
-                <p>ڕێکخستنی پشتڕاستکردنەوە</p>
-            </div>
-            <div class="item-box">
-                <h4>✅ ڕێکخستنەکان</h4>
-                <div id="verificationContent"></div>
-            </div>
-        </section>
+                <a href="#welcome" class="nav-item" data-section="welcome">
+                    <div class="nav-icon"><i class="fas fa-hand-wave"></i></div>
+                    <span class="nav-label">Welcome</span>
+                </a>
+                <a href="#goodbye" class="nav-item" data-section="goodbye">
+                    <div class="nav-icon"><i class="fas fa-hand-peace"></i></div>
+                    <span class="nav-label">Goodbye</span>
+                </a>
+                <a href="#reactionroles" class="nav-item" data-section="reactionroles">
+                    <div class="nav-icon"><i class="fas fa-face-smile"></i></div>
+                    <span class="nav-label">Reaction Roles</span>
+                </a>
+                <a href="#invitetracker" class="nav-item" data-section="invitetracker">
+                    <div class="nav-icon"><i class="fas fa-envelope"></i></div>
+                    <span class="nav-label">Invite Tracker</span>
+                </a>
+                <a href="#tickets" class="nav-item" data-section="tickets">
+                    <div class="nav-icon"><i class="fas fa-ticket"></i></div>
+                    <span class="nav-label">Tickets</span>
+                </a>
+                <a href="#giveaways" class="nav-item" data-section="giveaways">
+                    <div class="nav-icon"><i class="fas fa-gift"></i></div>
+                    <span class="nav-label">Giveaways</span>
+                </a>
+                <a href="#warns" class="nav-item" data-section="warns">
+                    <div class="nav-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                    <span class="nav-label">Warns</span>
+                </a>
+                <a href="#games" class="nav-item" data-section="games">
+                    <div class="nav-icon"><i class="fas fa-gamepad"></i></div>
+                    <span class="nav-label">Games</span>
+                </a>
+                <a href="#announcements" class="nav-item" data-section="announcements">
+                    <div class="nav-icon"><i class="fas fa-bullhorn"></i></div>
+                    <span class="nav-label">Announcements</span>
+                </a>
+                <a href="#colorroles" class="nav-item" data-section="colorroles">
+                    <div class="nav-icon"><i class="fas fa-palette"></i></div>
+                    <span class="nav-label">Color Roles</span>
+                </a>
 
-        <section id="moderation" class="section">
-            <div class="section-header">
-                <h2>🔨 سەرپەرشتیکردن</h2>
-                <p>ڕێکخستنی سەرپەرشتیکردن</p>
-            </div>
-            <div class="item-box">
-                <h4>🔨 ڕێکخستنەکان</h4>
-                <div id="moderationContent"></div>
-            </div>
-        </section>
+                <div class="nav-divider"></div>
+                <div class="nav-section-title">Utilities</div>
 
-        <section id="autorole" class="section">
-            <div class="section-header">
-                <h2>🎭 ڕۆڵی خۆکار</h2>
-                <p>ڕێکخستنی ڕۆڵی خۆکار</p>
-            </div>
-            <div class="item-box">
-                <h4>🎭 ڕێکخستنەکان</h4>
-                <div id="autoroleContent"></div>
-            </div>
-        </section>
+                <a href="#utility" class="nav-item" data-section="utility">
+                    <div class="nav-icon"><i class="fas fa-wrench"></i></div>
+                    <span class="nav-label">Utility</span>
+                </a>
+                <a href="#triggers" class="nav-item" data-section="triggers">
+                    <div class="nav-icon"><i class="fas fa-bolt"></i></div>
+                    <span class="nav-label">Triggers</span>
+                </a>
+                <a href="#riskscore" class="nav-item" data-section="riskscore">
+                    <div class="nav-icon"><i class="fas fa-chart-simple"></i></div>
+                    <span class="nav-label">Risk Score</span>
+                </a>
+            </nav>
 
-        <section id="logs" class="section">
-            <div class="section-header">
-                <h2>📝 تۆمارەکان</h2>
-                <p>ڕێکخستنی تۆمارەکان</p>
+            <div class="sidebar-footer">
+                <div class="version-info">
+                    <span class="badge">v7.0.0</span>
+                    <span class="copyright">© 2025</span>
+                </div>
             </div>
-            <div class="item-box">
-                <h4>📝 ڕێکخستنەکان</h4>
-                <div id="logsContent"></div>
-            </div>
-        </section>
+        </aside>
 
-        <section id="levels" class="section">
-            <div class="section-header">
-                <h2>🏆 ئاستەکان</h2>
-                <p>ڕێکخستنی ئاستەکان</p>
-            </div>
-            <div class="item-box">
-                <h4>🏆 ڕێکخستنەکان</h4>
-                <div id="levelsContent"></div>
-            </div>
-        </section>
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="icon-btn" id="sidebarToggle" title="Toggle Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 id="pageTitle">General Settings</h1>
+                </div>
 
-        <section id="rolelimits" class="section">
-            <div class="section-header">
-                <h2>👥 سنووری ڕۆڵ</h2>
-                <p>ڕێکخستنی سنووری ڕۆڵەکان</p>
-            </div>
-            <div class="item-box">
-                <h4>👥 ڕێکخستنەکان</h4>
-                <div id="roleLimitsContent"></div>
-            </div>
-        </section>
+                <div class="topbar-center">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search settings...">
+                        <kbd>CTRL + K</kbd>
+                    </div>
+                </div>
 
-        <section id="welcome" class="section">
-            <div class="section-header">
-                <h2>👋 بەخێرهاتن</h2>
-                <p>ڕێکخستنی بەخێرهاتن</p>
-            </div>
-            <div class="item-box">
-                <h4>👋 ڕێکخستنەکان</h4>
-                <div id="welcomeContent"></div>
-            </div>
-        </section>
+                <div class="topbar-actions">
+                    <button class="icon-btn" id="refreshBtn" title="Refresh">
+                        <i class="fas fa-rotate"></i>
+                    </button>
+                    <button class="icon-btn" id="exportBtn" title="Export">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-btn" id="importBtn" title="Import">
+                        <i class="fas fa-upload"></i>
+                    </button>
+                    <button class="icon-btn" id="themeBtn" title="Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="icon-btn" id="shortcutsBtn" title="Shortcuts">
+                        <i class="fas fa-keyboard"></i>
+                    </button>
+                    <button class="btn-save" id="saveBtn">
+                        <i class="fas fa-save"></i>
+                        <span>Save</span>
+                    </button>
+                </div>
+            </header>
 
-        <section id="goodbye" class="section">
-            <div class="section-header">
-                <h2>👋 ماڵئاوا</h2>
-                <p>ڕێکخستنی ماڵئاوا</p>
+            <div class="filters-bar">
+                <div class="filters-group">
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-list"></i> All
+                    </button>
+                    <button class="filter-btn" data-filter="enabled">
+                        <i class="fas fa-check"></i> Enabled
+                    </button>
+                    <button class="filter-btn" data-filter="disabled">
+                        <i class="fas fa-times"></i> Disabled
+                    </button>
+                </div>
+                <div class="filters-right">
+                    <div class="connection-status" id="connectionStatus">
+                        <span class="status-indicator online"></span>
+                        <span>Connected</span>
+                    </div>
+                </div>
             </div>
-            <div class="item-box">
-                <h4>👋 ڕێکخستنەکان</h4>
-                <div id="goodbyeContent"></div>
-            </div>
-        </section>
 
-        <section id="reactionroles" class="section">
-            <div class="section-header">
-                <h2>😊 ڕۆڵی کاردانەوە</h2>
-                <p>ڕێکخستنی ڕۆڵی کاردانەوە</p>
+            <div class="content" id="content">
+                <!-- Content loaded dynamically -->
             </div>
-            <div class="item-box">
-                <h4>😊 ڕێکخستنەکان</h4>
-                <div id="reactionRolesContent"></div>
-            </div>
-        </section>
 
-        <section id="invitetracker" class="section">
-            <div class="section-header">
-                <h2>📨 چاودێری بانگهێشت</h2>
-                <p>ڕێکخستنی چاودێری بانگهێشت</p>
-            </div>
-            <div class="item-box">
-                <h4>📨 ڕێکخستنەکان</h4>
-                <div id="inviteTrackerContent"></div>
-            </div>
-        </section>
+            <footer class="footer">
+                <div class="footer-left">
+                    <span>Security Bot Dashboard</span>
+                    <span>•</span>
+                    <span>v7.0.0</span>
+                </div>
+                <div class="footer-right">
+                    <span id="footerPing">Ping: --ms</span>
+                </div>
+            </footer>
+        </main>
+    </div>
 
-        <section id="tickets" class="section">
-            <div class="section-header">
-                <h2>🎫 تیکتەکان</h2>
-                <p>ڕێکخستنی تیکتەکان</p>
-            </div>
-            <div class="item-box">
-                <h4>🎫 ڕێکخستنەکان</h4>
-                <div id="ticketsContent"></div>
-            </div>
-        </section>
-
-        <section id="giveaways" class="section">
-            <div class="section-header">
-                <h2>🎁 خەڵاتکردن</h2>
-                <p>ڕێکخستنی خەڵاتکردن</p>
-            </div>
-            <div class="item-box">
-                <h4>🎁 ڕێکخستنەکان</h4>
-                <div id="giveawaysContent"></div>
-            </div>
-        </section>
-
-        <section id="warns" class="section">
-            <div class="section-header">
-                <h2>⚠️ ئاگادارییەکان</h2>
-                <p>ڕێکخستنی ئاگادارییەکان</p>
-            </div>
-            <div class="item-box">
-                <h4>⚠️ ڕێکخستنەکان</h4>
-                <div id="warnsContent"></div>
-            </div>
-        </section>
-
-        <section id="games" class="section">
-            <div class="section-header">
-                <h2>🎮 یارییەکان</h2>
-                <p>ڕێکخستنی یارییەکان</p>
-            </div>
-            <div class="item-box">
-                <h4>🎮 ڕێکخستنەکان</h4>
-                <div id="gamesContent"></div>
-            </div>
-        </section>
-
-        <section id="announcements" class="section">
-            <div class="section-header">
-                <h2>📢 ڕاگەیاندنەکان</h2>
-                <p>ڕێکخستنی ڕاگەیاندنەکان</p>
-            </div>
-            <div class="item-box">
-                <h4>📢 ڕێکخستنەکان</h4>
-                <div id="announcementsContent"></div>
-            </div>
-        </section>
-
-        <section id="colorroles" class="section">
-            <div class="section-header">
-                <h2>🎨 ڕۆڵی ڕەنگ</h2>
-                <p>ڕێکخستنی ڕۆڵی ڕەنگ</p>
-            </div>
-            <div class="item-box">
-                <h4>🎨 ڕێکخستنەکان</h4>
-                <div id="colorRolesContent"></div>
-            </div>
-        </section>
-
-        <section id="utility" class="section">
-            <div class="section-header">
-                <h2>🔧 ئامرازەکان</h2>
-                <p>ڕێکخستنی ئامرازەکان</p>
-            </div>
-            <div class="item-box">
-                <h4>🔧 ڕێکخستنەکان</h4>
-                <div id="utilityContent"></div>
-            </div>
-        </section>
-    </main>
-
-    <!-- ==================== SCRIPTS ==================== -->
     <script src="script.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loadingScreen');
+                const app = document.getElementById('app');
+                if (loadingScreen) loadingScreen.style.display = 'none';
+                if (app) app.style.display = 'flex';
+            }, 1500);
+        });
+    </script>
 </body>
 </html>

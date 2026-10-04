@@ -1,4 +1,4 @@
-const { logRole } = require('../handlers/logger');
+const { EmbedBuilder, AuditLogEvent } = require('discord.js');
 const { checkAction } = require('../handlers/antiNuke');
 
 module.exports = {
@@ -7,24 +7,48 @@ module.exports = {
     async execute(role, client, config) {
         if (!role.guild) return;
 
-        // ==================== ANTI-NUKE ====================
         try {
-            const auditLogs = await role.guild.fetchAuditLogs({ limit: 1, type: 30 }).catch(() => null);
+            // ================= ANTI-NUKE =================
+            const auditLogs = await role.guild.fetchAuditLogs({
+                limit: 1,
+                type: AuditLogEvent.RoleCreate
+            }).catch(() => null);
+
+            let executor = null;
             if (auditLogs) {
                 const entry = auditLogs.entries.first();
                 if (entry && entry.executor) {
-                    await checkAction(role.guild, entry.executor.id, 'roleCreate', config);
+                    executor = entry.executor;
                 }
             }
-        } catch (e) {
-            console.error(`Anti-Nuke RoleCreate Error: ${e.message}`);
-        }
 
-        // ==================== LOG ====================
-        try {
-            await logRole(role, 'create');
-        } catch (e) {
-            console.error(`Logger Error: ${e.message}`);
+            if (executor) {
+                const member = await role.guild.members.fetch(executor.id).catch(() => null);
+                if (member && !member.user.bot) {
+                    await checkAction(role.guild, executor.id, 'roleCreate', config, 10);
+                }
+            }
+
+            // ================= LOG =================
+            if (config.logChannels?.roleCreated) {
+                const logChannel = role.guild.channels.cache.get(config.logChannels.roleCreated);
+                if (logChannel) {
+                    const embed = new EmbedBuilder()
+                        .setColor('#57F287')
+                        .setTitle('🎭 ڕۆڵی نوێ دروستکرا')
+                        .addFields(
+                            { name: 'ناو', value: role.name, inline: true },
+                            { name: 'ڕەنگ', value: `${role.hexColor}`, inline: true },
+                            { name: 'ID', value: role.id, inline: true },
+                            { name: 'دروستکەر', value: executor ? `${executor.tag}` : 'نەزانراو', inline: true }
+                        )
+                        .setTimestamp();
+                    await logChannel.send({ embeds: [embed] }).catch(() => {});
+                }
+            }
+
+        } catch (error) {
+            console.error('Role Create Error:', error);
         }
     }
 };

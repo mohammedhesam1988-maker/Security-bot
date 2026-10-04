@@ -1,26 +1,42 @@
+const { EmbedBuilder } = require('discord.js');
+const { checkAction } = require('../handlers/antiNuke');
+
 module.exports = {
     name: 'inviteCreate',
     once: false,
     async execute(invite, client, config) {
         if (!invite.guild) return;
-        const { guild } = invite;
 
-        // ==================== LOG ====================
-        if (config.logChannels && config.logChannels.general) {
-            try {
-                const logChannel = guild.channels.cache.get(config.logChannels.general);
+        try {
+            // ================= ANTI-NUKE =================
+            if (invite.inviter) {
+                const member = await invite.guild.members.fetch(invite.inviter.id).catch(() => null);
+                if (member && !member.user.bot) {
+                    await checkAction(invite.guild, invite.inviter.id, 'inviteLink', config, 3);
+                }
+            }
+
+            // ================= LOG =================
+            if (config.logChannels?.inviteCreated) {
+                const logChannel = invite.guild.channels.cache.get(config.logChannels.inviteCreated);
                 if (logChannel) {
-                    const { EmbedBuilder } = require('discord.js');
                     const embed = new EmbedBuilder()
-                        .setColor('#22C55E')
-                        .setTitle('🔗 Invite Created')
-                        .setDescription(`**Code:** ${invite.code}\n**Channel:** <#${invite.channelId}>\n**Inviter:** ${invite.inviter ? invite.inviter.tag : 'Unknown'}\n**Max Uses:** ${invite.maxUses || '∞'}\n**Expires:** ${invite.expiresAt ? `<t:${Math.floor(invite.expiresAt.getTime() / 1000)}:R>` : 'Never'}`)
+                        .setColor('#57F287')
+                        .setTitle('🔗 لینکی بانگهێشتنامە دروستکرا')
+                        .addFields(
+                            { name: 'کۆد', value: invite.code, inline: true },
+                            { name: 'چانێل', value: invite.channel ? `${invite.channel.name}` : 'نەزانراو', inline: true },
+                            { name: 'دروستکەر', value: invite.inviter ? `${invite.inviter.tag}` : 'نەزانراو', inline: true },
+                            { name: 'ماوە', value: invite.maxAge === 0 ? 'هەمیشەیی' : `${invite.maxAge} چرکە`, inline: true },
+                            { name: 'زۆرترین بەکارهێنان', value: invite.maxUses === 0 ? 'بێ سنوور' : `${invite.maxUses}`, inline: true }
+                        )
                         .setTimestamp();
                     await logChannel.send({ embeds: [embed] }).catch(() => {});
                 }
-            } catch (e) {
-                console.error(`Invite Create Log Error: ${e.message}`);
             }
+
+        } catch (error) {
+            console.error('Invite Create Error:', error);
         }
     }
 };

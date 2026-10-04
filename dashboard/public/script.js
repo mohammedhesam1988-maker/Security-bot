@@ -1,1296 +1,1943 @@
-const API_BASE = 'http://127.0.0.1:3000/api';
+// ============================================================
+//           SECURITY BOT DASHBOARD - SCRIPT.JS
+//                    Version 8.0.0 (English)
+// ============================================================
 
-let whitelistData = { users: {}, roles: {}, channels: {} };
-let antispamData = {};
-let antinukeData = {};
-let botConfig = {};
+// ================= CONFIGURATION =================
+const CONFIG = {
+    API_BASE: window.location.origin + '/api',
+    TOAST_DURATION: 3000,
+    AUTO_SAVE_INTERVAL: 60000,
+    SEARCH_DEBOUNCE: 300,
+    VERSION: '8.0.0',
+    DEBUG: false
+};
 
-// ==================== BOT STATUS ====================
-async function fetchStatus() {
+// ================= API HANDLER =================
+const API = {
+    get: async (path) => {
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}${path}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
+        } catch (error) {
+            console.error(`GET ${path}:`, error);
+            return null;
+        }
+    },
+    post: async (path, data) => {
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}${path}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
+        } catch (error) {
+            console.error(`POST ${path}:`, error);
+            return { success: false };
+        }
+    }
+};
+
+// ================= STATE =================
+const state = {
+    currentSection: 'general',
+    data: {},
+    originalData: {},
+    loadedSections: new Set(),
+    searchTerm: '',
+    filter: 'all',
+    unsavedChanges: false,
+    history: [],
+    notificationCount: 0,
+    theme: 'dark',
+    sidebarCollapsed: false
+};
+
+// ================= SECTION TITLES =================
+const SECTION_TITLES = {
+    general: 'General Settings',
+    analytics: 'Analytics',
+    whitelist: 'Whitelist',
+    antispam: 'Anti-Spam',
+    antinuke: 'Anti-Nuke',
+    beastmode: 'Beast Mode',
+    antiraid: 'Anti-Raid',
+    verification: 'Verification',
+    moderation: 'Moderation',
+    autorole: 'Auto Role',
+    logs: 'Logs',
+    levels: 'Levels',
+    rolelimits: 'Role Limits',
+    welcome: 'Welcome',
+    goodbye: 'Goodbye',
+    reactionroles: 'Reaction Roles',
+    invitetracker: 'Invite Tracker',
+    tickets: 'Tickets',
+    giveaways: 'Giveaways',
+    warns: 'Warns',
+    games: 'Games',
+    announcements: 'Announcements',
+    colorroles: 'Color Roles',
+    utility: 'Utility',
+    triggers: 'Triggers',
+    riskscore: 'Risk Score'
+};
+
+// ================= LABEL NAMES (ALL ENGLISH) =================
+const LABEL_NAMES = {
+    // General
+    enabled: 'Enabled',
+    channelId: 'Channel ID',
+    roles: 'Roles',
+    users: 'Users',
+    channels: 'Channels',
+    max: 'Max',
+    min: 'Min',
+    punishment: 'Punishment',
+    thresholds: 'Thresholds',
+    message: 'Message',
+    color: 'Color',
+    embed: 'Embed',
+    logChannelId: 'Log Channel ID',
+    categoryId: 'Category ID',
+    supportRoleId: 'Support Role ID',
+    maxTickets: 'Max Tickets',
+    minAccountAge: 'Min Account Age',
+    joinRate: 'Join Rate',
+    timeWindow: 'Time Window',
+    autoLockdown: 'Auto Lockdown',
+    lockdownDuration: 'Lockdown Duration',
+    autoPunish: 'Auto Punish',
+    maxWarns: 'Max Warns',
+    cooldown: 'Cooldown',
+    levelUpChannel: 'Level Up Channel',
+    requireBoost: 'Require Boost',
+    requiredLevel: 'Required Level',
+    allowedDomains: 'Allowed Domains',
+    words: 'Words',
+    threshold: 'Threshold',
+    window: 'Window',
+    maxJoins: 'Max Joins',
+    maxConnects: 'Max Connects',
+    botName: 'Bot Name',
+    botDescription: 'Bot Description',
+    botStatus: 'Bot Status',
+    botActivity: 'Bot Activity',
+    botActivityType: 'Activity Type',
+    dmMessage: 'DM Message',
+    mentionUser: 'Mention User',
+    sendDM: 'Send DM',
+    imageUrl: 'Image URL',
+    thumbnailUrl: 'Thumbnail URL',
+    footer: 'Footer',
+    footerIcon: 'Footer Icon',
+    emoji: 'Emoji',
+    disabledChannels: 'Disabled Channels',
+    disabledRoles: 'Disabled Roles',
+    disabledUsers: 'Disabled Users',
+    maxLimit: 'Max Limit',
+    limitWindow: 'Limit Window',
+    customName: 'Custom Name',
+    aliases: 'Aliases',
+    autoDeleteMessage: 'Auto Delete Message',
+    autoDeleteInvocation: 'Auto Delete Invocation',
+    autoDeleteReply: 'Auto Delete Reply',
+    autoDelete: 'Auto Delete',
+    autoDeleteDelay: 'Auto Delete Delay',
+    messageXp: 'Message XP',
+    voiceXp: 'Voice XP',
+    xpPerMessage: 'XP Per Message',
+    pointsPerMessage: 'Points Per Message',
+    pointsPerVoice: 'Points Per Voice',
+    levelUpMessage: 'Level Up Message',
+    levelUpEmbed: 'Level Up Embed',
+    levelUpColor: 'Level Up Color',
+    announceInDM: 'Announce in DM',
+    maxLevel: 'Max Level',
+    xpMultiplier: 'XP Multiplier',
+    roleRewards: 'Role Rewards',
+    ignoreChannels: 'Ignore Channels',
+    ignoreRoles: 'Ignore Roles',
+    ignoreUsers: 'Ignore Users',
+    streakBonus: 'Streak Bonus',
+    streakMultiplier: 'Streak Multiplier',
+    decayEnabled: 'Decay Enabled',
+    decayDays: 'Decay Days',
+    decayAmount: 'Decay Amount',
+    checkAvatar: 'Check Avatar',
+    checkUsername: 'Check Username',
+    autoBan: 'Auto Ban',
+    autoBanThreshold: 'Auto Ban Threshold',
+    whitelistBots: 'Whitelist Bots',
+    maxJoinsPerUser: 'Max Joins Per User',
+    duplicateNameCheck: 'Duplicate Name Check',
+    duplicateAvatarCheck: 'Duplicate Avatar Check',
+    ignoreBots: 'Ignore Bots',
+    requireVerification: 'Require Verification',
+    humanOnly: 'Human Only',
+    roleDelay: 'Role Delay',
+    botRoles: 'Bot Roles',
+    // AntiSpam
+    spam: 'Spam',
+    invites: 'Invites',
+    links: 'Links',
+    phishing: 'Phishing',
+    bannedWords: 'Banned Words',
+    caps: 'Caps',
+    mentions: 'Mentions',
+    duplicates: 'Duplicates',
+    zalgo: 'Zalgo',
+    charRepeat: 'Char Repeat',
+    personalInfo: 'Personal Info',
+    massMention: 'Mass Mention',
+    stickerSpam: 'Sticker Spam',
+    attachmentSpam: 'Attachment Spam',
+    voiceSpam: 'Voice Spam',
+    voiceConnectSpam: 'Voice Connect Spam',
+    voiceMuteSpam: 'Voice Mute Spam',
+    voiceDeafenSpam: 'Voice Deafen Spam',
+    voiceJoinLeaveSpam: 'Voice Join/Leave Spam',
+    voiceMoveSpam: 'Voice Move Spam',
+    mentionEveryone: 'Mention Everyone',
+    nsfwContent: 'NSFW Content',
+    toxicWords: 'Toxic Words',
+    racialSlurs: 'Racial Slurs',
+    selfBot: 'Self Bot',
+    tokenGrabber: 'Token Grabber',
+    // AntiNuke
+    ban: 'Ban',
+    kick: 'Kick',
+    channelCreate: 'Channel Create',
+    channelDelete: 'Channel Delete',
+    channelUpdate: 'Channel Update',
+    channelPermissionsUpdate: 'Channel Permissions Update',
+    mention: 'Mention',
+    botAdd: 'Bot Add',
+    prune: 'Prune',
+    vanityChange: 'Vanity Change',
+    serverRename: 'Server Rename',
+    serverIconChange: 'Server Icon Change',
+    channelRename: 'Channel Rename',
+    channelTopicChange: 'Channel Topic Change',
+    emojiCreate: 'Emoji Create',
+    emojiDelete: 'Emoji Delete',
+    inviteDelete: 'Invite Delete',
+    inviteLink: 'Invite Link',
+    ghostPing: 'Ghost Ping',
+    webhookCreate: 'Webhook Create',
+    webhookDelete: 'Webhook Delete',
+    webhookUpdate: 'Webhook Update',
+    threadCreate: 'Thread Create',
+    threadDelete: 'Thread Delete',
+    stickerCreate: 'Sticker Create',
+    stickerDelete: 'Sticker Delete',
+    roleCreate: 'Role Create',
+    roleDelete: 'Role Delete',
+    roleRename: 'Role Rename',
+    roleUpdate: 'Role Update',
+    roleAdd: 'Role Add',
+    dangerousRolePermissions: 'Dangerous Role Permissions',
+    dangerousRoleAdd: 'Dangerous Role Add',
+    all: 'All'
+};
+
+// ================= TOAST =================
+function showToast(msg, type = 'success') {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    const icons = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-xmark',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+    };
+    t.innerHTML = `<i class="fas ${icons[type] || icons.success}"></i><span>${msg}</span>`;
+    document.body.appendChild(t);
+    setTimeout(() => {
+        t.style.opacity = '0';
+        t.style.transform = 'translateY(20px)';
+        setTimeout(() => t.remove(), 300);
+    }, CONFIG.TOAST_DURATION);
+}
+
+// ================= NAVIGATION =================
+function setupNavigation() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const s = item.dataset.section;
+            if (!s) return;
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            loadSection(s);
+        });
+    });
+}
+
+// ================= LOAD SECTION =================
+async function loadSection(section) {
+    state.currentSection = section;
+    const content = document.getElementById('content');
+    const title = document.getElementById('pageTitle');
+
+    if (title) title.textContent = SECTION_TITLES[section] || section;
+    content.innerHTML = `<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:300px;gap:16px;"><div class="loading"></div><p style="color:var(--text-muted);">Loading...</p></div>`;
+
     try {
-        const res = await fetch(`${API_BASE}/status`);
-        const data = await res.json();
-        const botName = document.getElementById('botName');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-
-        if (botName) botName.innerText = data.tag || 'Unknown';
-        if (statusText) statusText.innerText = data.online ? 'Online' : 'Offline';
-        if (statusDot) statusDot.className = data.online ? 'dot online' : 'dot offline';
-    } catch (e) { console.error(e); }
+        const data = await API.get(`/${section}`);
+        state.data = data || {};
+        state.originalData = JSON.parse(JSON.stringify(data || {}));
+        state.loadedSections.add(section);
+        renderSection(section, state.data);
+        updateSaveButtonState(false);
+    } catch (error) {
+        console.error('Load Section Error:', error);
+        content.innerHTML = `<div class="item-box"><h4 style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> Error</h4><p style="color:var(--text-muted);">Error loading data: ${error.message}</p></div>`;
+    }
 }
 
-// ==================== CONFIG ====================
-async function fetchConfig() {
-    try {
-        const res = await fetch(`${API_BASE}/config`);
-        botConfig = await res.json();
-        console.log('Config loaded:', Object.keys(botConfig.utility || {}).length, 'utility commands');
-    } catch (e) { console.error('Error fetching config:', e); }
+// ================= UPDATE SAVE BUTTON =================
+function updateSaveButtonState(hasChanges) {
+    const saveBtn = document.getElementById('saveBtn');
+    if (!saveBtn) return;
+    if (hasChanges) {
+        saveBtn.classList.add('has-changes');
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Save ●';
+    } else {
+        saveBtn.classList.remove('has-changes');
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+    }
+    state.unsavedChanges = hasChanges;
 }
 
-// ==================== GENERAL ====================
-async function fetchGeneral() {
-    try {
-        const res = await fetch(`${API_BASE}/general`);
-        const data = await res.json();
-        renderGeneral(data);
-    } catch (e) { console.error(e); }
+// ================= RENDER SECTION =================
+function renderSection(section, data) {
+    const content = document.getElementById('content');
+    if (!content) return;
+
+    switch (section) {
+        case 'analytics':
+            content.innerHTML = renderAnalytics(data);
+            loadAnalyticsStats();
+            return;
+        case 'whitelist':
+            content.innerHTML = renderWhitelist(data);
+            return;
+        case 'utility':
+            content.innerHTML = renderUtility(data);
+            return;
+        case 'triggers':
+            content.innerHTML = renderTriggers(data);
+            return;
+        case 'welcome':
+            content.innerHTML = renderWelcome(data);
+            return;
+        case 'goodbye':
+            content.innerHTML = renderGoodbye(data);
+            return;
+        case 'autorole':
+            content.innerHTML = renderAutoRole(data);
+            return;
+        case 'levels':
+            content.innerHTML = renderLevels(data);
+            return;
+        case 'logs':
+            content.innerHTML = renderLogs(data);
+            return;
+        case 'reactionroles':
+            content.innerHTML = renderReactionRoles(data);
+            return;
+        case 'antispam':
+            content.innerHTML = renderAntiSpam(data);
+            return;
+        case 'antinuke':
+            content.innerHTML = renderAntiNuke(data);
+            return;
+        case 'beastmode':
+            content.innerHTML = renderBeastMode(data);
+            return;
+        case 'antiraid':
+            content.innerHTML = renderAntiRaid(data);
+            return;
+        case 'verification':
+            content.innerHTML = renderVerification(data);
+            return;
+        case 'moderation':
+            content.innerHTML = renderModeration(data);
+            return;
+        case 'rolelimits':
+            content.innerHTML = renderRoleLimits(data);
+            return;
+        case 'games':
+            content.innerHTML = renderGames(data);
+            return;
+        case 'announcements':
+            content.innerHTML = renderAnnouncements(data);
+            return;
+        case 'colorroles':
+            content.innerHTML = renderColorRoles(data);
+            return;
+        case 'invitetracker':
+            content.innerHTML = renderInviteTracker(data);
+            return;
+        case 'tickets':
+            content.innerHTML = renderTickets(data);
+            return;
+        case 'giveaways':
+            content.innerHTML = renderGiveaways(data);
+            return;
+        case 'warns':
+            content.innerHTML = renderWarns(data);
+            return;
+        case 'riskscore':
+            content.innerHTML = renderRiskScore(data);
+            return;
+        default:
+            content.innerHTML = renderUniversal(data);
+    }
 }
 
-function renderGeneral(data) {
-    const container = document.getElementById('generalContent');
-    if (!container) return;
-    container.innerHTML = `
-        <div class="item-box">
-            <h4>Bot Information</h4>
-            <div class="setting-row"><span>Bot Name:</span><input type="text" value="${data.botName || 'Security Bot'}" onchange="updateGeneral('botName', this.value)"></div>
-            <div class="setting-row"><span>Bot Description:</span><input type="text" value="${data.botDescription || ''}" onchange="updateGeneral('botDescription', this.value)"></div>
-            <div class="setting-row"><span>Bot Status:</span>
-                <select onchange="updateGeneral('botStatus', this.value)">
-                    <option value="online" ${data.botStatus === 'online' ? 'selected' : ''}>Online</option>
-                    <option value="idle" ${data.botStatus === 'idle' ? 'selected' : ''}>Idle</option>
-                    <option value="dnd" ${data.botStatus === 'dnd' ? 'selected' : ''}>Do Not Disturb</option>
-                    <option value="invisible" ${data.botStatus === 'invisible' ? 'selected' : ''}>Invisible</option>
-                </select>
-            </div>
-            <div class="setting-row"><span>Bot Activity:</span><input type="text" value="${data.botActivity || ''}" onchange="updateGeneral('botActivity', this.value)"></div>
-            <div class="setting-row"><span>Activity Type:</span>
-                <select onchange="updateGeneral('botActivityType', this.value)">
-                    <option value="PLAYING" ${data.botActivityType === 'PLAYING' ? 'selected' : ''}>Playing</option>
-                    <option value="WATCHING" ${data.botActivityType === 'WATCHING' ? 'selected' : ''}>Watching</option>
-                    <option value="LISTENING" ${data.botActivityType === 'LISTENING' ? 'selected' : ''}>Listening</option>
-                    <option value="COMPETING" ${data.botActivityType === 'COMPETING' ? 'selected' : ''}>Competing</option>
-                </select>
-            </div>
-        </div>
-        <div style="margin-top: 20px; text-align: left;">
-            <button class="btn btn-save" onclick="saveSection('general')">💾 پاشەکەوتکردن</button>
-        </div>
-    `;
+// ================= UNIVERSAL RENDERER =================
+function renderUniversal(data, parentPath = '') {
+    if (data === null || data === undefined) return '';
+    if (typeof data !== 'object' || Array.isArray(data)) return '';
+
+    let html = '';
+    const keys = Object.keys(data);
+
+    for (const key of keys) {
+        const value = data[key];
+        const path = parentPath ? `${parentPath}.${key}` : key;
+
+        if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+            if (Object.keys(value).length === 0) continue;
+            html += `<div class="item-box">
+                <h4><i class="fas fa-folder"></i> ${formatLabel(key)}</h4>
+                ${renderUniversal(value, path)}
+            </div>`;
+        } else {
+            html += renderField(key, value, path);
+        }
+    }
+
+    return html;
 }
 
-async function updateGeneral(field, value) {
-    try { await fetch(`${API_BASE}/general/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchGeneral(); } catch (e) { alert('Error'); }
+// ================= RENDER FIELD =================
+function renderField(key, value, path) {
+    const label = formatLabel(key);
+    const dataPath = `data-config-path="${path}"`;
+
+    if (typeof value === 'boolean') {
+        return `<div class="setting-row">
+            <span>${label}</span>
+            <label class="toggle">
+                <input type="checkbox" ${value ? 'checked' : ''} ${dataPath} data-type="boolean">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>`;
+    }
+
+    if (typeof value === 'number') {
+        return `<div class="setting-row">
+            <span>${label}</span>
+            <input type="number" value="${value}" ${dataPath} data-type="number">
+        </div>`;
+    }
+
+    if (Array.isArray(value)) {
+        const displayValue = value.join(', ');
+        return `<div class="setting-row">
+            <span>${label}</span>
+            <input type="text" value="${escapeHtml(displayValue)}" ${dataPath} data-type="array" placeholder="ID, ID, ID">
+        </div>`;
+    }
+
+    const displayValue = value === null ? '' : String(value);
+    return `<div class="setting-row">
+        <span>${label}</span>
+        <input type="text" value="${escapeHtml(displayValue)}" ${dataPath} data-type="string">
+    </div>`;
 }
 
-// ==================== ANALYTICS ====================
-async function fetchAnalytics() {
-    try {
-        const res = await fetch(`${API_BASE}/analytics`);
-        const data = await res.json();
-        renderAnalytics(data);
-    } catch (e) { console.error(e); }
+// ================= HELPERS =================
+function formatLabel(key) {
+    return LABEL_NAMES[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ================= ANALYTICS =================
 function renderAnalytics(data) {
-    const container = document.getElementById('analyticsContent');
-    if (!container) return;
-    container.innerHTML = `
+    return `
         <div class="item-box">
-            <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateAnalytics('enabled', this.checked)"></div>
-            <div class="setting-row"><span>Track Messages:</span><input type="checkbox" ${data.trackMessages ? 'checked' : ''} onchange="updateAnalytics('trackMessages', this.checked)"></div>
-            <div class="setting-row"><span>Track Voice:</span><input type="checkbox" ${data.trackVoice ? 'checked' : ''} onchange="updateAnalytics('trackVoice', this.checked)"></div>
-            <div class="setting-row"><span>Track Members:</span><input type="checkbox" ${data.trackMembers ? 'checked' : ''} onchange="updateAnalytics('trackMembers', this.checked)"></div>
-            <div class="setting-row"><span>Track Commands:</span><input type="checkbox" ${data.trackCommands ? 'checked' : ''} onchange="updateAnalytics('trackCommands', this.checked)"></div>
-            <div class="setting-row"><span>Daily Report:</span><input type="checkbox" ${data.dailyReport ? 'checked' : ''} onchange="updateAnalytics('dailyReport', this.checked)"></div>
-            <div class="setting-row"><span>Report Channel ID:</span><input type="text" value="${data.reportChannel || ''}" placeholder="Channel ID" onchange="updateAnalytics('reportChannel', this.value)"></div>
+            <h4><i class="fas fa-chart-line"></i> Server Statistics</h4>
+            <div id="analyticsStats"><div class="loading"></div></div>
         </div>
-        <div style="margin-top: 20px; text-align: left;">
-            <button class="btn btn-save" onclick="saveSection('analytics')">💾 پاشەکەوتکردن</button>
-        </div>
-    `;
+        <div class="item-box">
+            <h4><i class="fas fa-server"></i> Bot Information</h4>
+            <div id="botInfo"><div class="loading"></div></div>
+        </div>`;
 }
 
-async function updateAnalytics(field, value) {
-    try { await fetch(`${API_BASE}/analytics/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchAnalytics(); } catch (e) { alert('Error'); }
+async function loadAnalyticsStats() {
+    const stats = await API.get('/analytics/stats');
+    const el = document.getElementById('analyticsStats');
+    if (el && stats) {
+        el.innerHTML = `
+            <div class="setting-row"><span>Server Name</span><span class="badge">${stats.name || 'Unknown'}</span></div>
+            <div class="setting-row"><span>Members</span><span class="badge success">${stats.members || 0}</span></div>
+            <div class="setting-row"><span>Channels</span><span class="badge">${stats.channels || 0}</span></div>
+            <div class="setting-row"><span>Roles</span><span class="badge">${stats.roles || 0}</span></div>
+            <div class="setting-row"><span>Emojis</span><span class="badge">${stats.emojis || 0}</span></div>
+            <div class="setting-row"><span>Boosts</span><span class="badge warning">${stats.boosts || 0}</span></div>
+        `;
+    }
+
+    const botInfo = await API.get('/bot/info');
+    const botEl = document.getElementById('botInfo');
+    if (botEl && botInfo) {
+        botEl.innerHTML = `
+            <div class="setting-row"><span>Tag</span><span class="badge">${botInfo.tag || 'Unknown'}</span></div>
+            <div class="setting-row"><span>Guilds</span><span class="badge">${botInfo.guilds || 0}</span></div>
+            <div class="setting-row"><span>Users</span><span class="badge">${botInfo.users || 0}</span></div>
+            <div class="setting-row"><span>Ping</span><span class="badge success">${botInfo.ping || 0}ms</span></div>
+            <div class="setting-row"><span>Uptime</span><span class="badge">${botInfo.uptime || 0} min</span></div>
+            <div class="setting-row"><span>Commands</span><span class="badge">${botInfo.commands || 0}</span></div>
+        `;
+    }
 }
 
-// ==================== WHITELIST ====================
-async function fetchWhitelist() {
-    try {
-        const res = await fetch(`${API_BASE}/whitelist`);
-        whitelistData = await res.json();
-        renderWhitelist();
-    } catch (e) { console.error(e); }
-}
-
-function renderWhitelist() {
-    const container = document.getElementById('whitelistContent');
-    if (!container) return;
-    container.innerHTML = '';
-
-    // لیستی هەموو ئەکشنەکان (لە Anti-Nuke, Anti-Raid, Anti-Spam, Beast Mode)
+// ================= WHITELIST =================
+function renderWhitelist(data) {
     const actions = [
-        // Anti-Nuke
-        'ban', 'kick', 'channelCreate', 'channelDelete', 'channelUpdate',
-        'channelPermissionsUpdate', 'roleCreate', 'roleDelete', 'roleUpdate',
-        'mention', 'botAdd', 'prune', 'dangerousRolePermissions', 'dangerousRoleAdd',
-        'vanityChange', 'serverRename', 'serverIconChange', 'roleRename',
-        'channelRename', 'channelTopicChange', 'emojiCreate', 'emojiDelete',
-        'inviteDelete', 'inviteLink', 'ghostPing', 'webhookCreate', 'webhookDelete',
-        'webhookUpdate', 'threadCreate', 'threadDelete', 'threadUpdate',
-        'stickerCreate', 'stickerDelete',
-        // Anti-Raid
-        'joinRate', 'accountAge', 'checkAvatar', 'checkUsername',
-        // Anti-Spam
-        'spam', 'invites', 'links', 'phishing', 'bannedWords', 'caps', 'emoji',
-        'mentions', 'duplicates', 'zalgo', 'charRepeat', 'personalInfo',
-        'massMention', 'stickerSpam', 'attachmentSpam', 'voiceSpam',
-        'voiceConnectSpam', 'voiceMuteSpam', 'voiceDeafenSpam',
-        'voiceJoinLeaveSpam', 'voiceMoveSpam',
-        // Beast Mode
-        'beastBan', 'beastKick', 'beastChannelCreate', 'beastChannelDelete',
-        'beastRoleCreate', 'beastRoleDelete'
+        'all', 'ban', 'kick', 'botAdd', 'roleUpdate', 'roleAdd',
+        'channelCreate', 'channelDelete', 'roleCreate', 'roleDelete',
+        'inviteLink', 'prune', 'mention', 'channelUpdate',
+        'channelPermissionsUpdate', 'channelRename', 'channelTopicChange',
+        'roleRename', 'dangerousRolePermissions', 'dangerousRoleAdd',
+        'serverRename', 'serverIconChange', 'vanityChange',
+        'emojiCreate', 'emojiDelete', 'stickerCreate', 'stickerDelete',
+        'webhookCreate', 'webhookDelete', 'webhookUpdate',
+        'threadCreate', 'threadDelete', 'ghostPing',
+        'voiceSpam', 'voiceConnectSpam'
     ];
 
-    // ==================== Trusted Users ====================
-    const trustedDiv = document.createElement('div');
-    trustedDiv.className = 'category';
-    trustedDiv.innerHTML = `<h3>✅ Trusted Users</h3>`;
-    const trustedBox = document.createElement('div');
-    trustedBox.className = 'item-box';
-    trustedBox.innerHTML = `
-        <div class="input-row">
-            <input type="text" id="input-trusted-users" placeholder="User ID">
-            <button class="btn btn-add" onclick="addTrustedUser()">Add</button>
+    const types = [
+        { key: 'users', icon: 'users', label: 'Users' },
+        { key: 'roles', icon: 'user-tag', label: 'Roles' },
+        { key: 'channels', icon: 'hashtag', label: 'Channels' }
+    ];
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-info-circle"></i> Guide</h4>
+        <p style="color:var(--text-muted);font-size:13px;">Whitelist for users who can perform actions without Anti-Nuke interfering. Separate IDs with commas (,).</p>
+    </div>`;
+
+    types.forEach(({ key, icon, label }) => {
+        html += `<div class="item-box">
+            <h4><i class="fas fa-${icon}"></i> ${label}</h4>`;
+
+        actions.forEach(action => {
+            const items = data?.[key]?.[action] || [];
+            const actionLabel = LABEL_NAMES[action] || action;
+
+            html += `<div class="setting-row">
+                <span>${actionLabel}</span>
+                <input type="text" value="${escapeHtml(items.join(', '))}" data-config-path="whitelist.${key}.${action}" data-type="array" placeholder="ID, ID, ID" style="min-width:300px;">
+            </div>`;
+        });
+
+        html += `</div>`;
+    });
+
+    return html;
+}
+
+// ================= UTILITY =================
+function renderUtility(data) {
+    if (!data || typeof data !== 'object') {
+        return `<div class="item-box"><h4><i class="fas fa-wrench"></i> Utility</h4><p style="color:var(--text-muted);">No data available</p></div>`;
+    }
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-info-circle"></i> Guide</h4>
+        <p style="color:var(--text-muted);font-size:13px;">Configure all utility commands here.</p>
+    </div>`;
+
+    Object.keys(data).forEach(command => {
+        const settings = data[command];
+        if (!settings || typeof settings !== 'object') return;
+
+        html += `<div class="item-box">
+            <h4><i class="fas fa-terminal"></i> /${command}</h4>
+            ${renderUniversal(settings, `utility.${command}`)}
+        </div>`;
+    });
+
+    return html;
+}
+
+// ================= TRIGGERS =================
+function renderTriggers(data) {
+    const triggers = data?.triggers || [];
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-bolt"></i> Trigger Settings</h4>
+        ${renderField('enabled', data?.enabled || false, 'triggers.enabled')}
+        ${renderField('maxTriggers', data?.maxTriggers || 50, 'triggers.maxTriggers')}
+        ${renderField('cooldown', data?.cooldown || 5000, 'triggers.cooldown')}
+        ${renderField('deleteAfter', data?.deleteAfter || 0, 'triggers.deleteAfter')}
+        ${renderField('replyToUser', data?.replyToUser ?? true, 'triggers.replyToUser')}
+        ${renderField('useEmbed', data?.useEmbed || false, 'triggers.useEmbed')}
+        ${renderField('embedColor', data?.embedColor || '#5865F2', 'triggers.embedColor')}
+        ${renderField('matchType', data?.matchType || 'normal', 'triggers.matchType')}
+        ${renderField('caseSensitive', data?.caseSensitive || false, 'triggers.caseSensitive')}
+    </div>
+
+    <div class="item-box">
+        <h4><i class="fas fa-plus"></i> Add New Trigger</h4>
+        <div class="setting-row">
+            <input type="text" id="trigger-name" placeholder="Trigger word or phrase" style="width:200px;">
+            <input type="text" id="trigger-response" placeholder="Response" style="width:300px;">
+            <button class="btn btn-primary btn-sm" onclick="addTrigger()">
+                <i class="fas fa-plus"></i> Add
+            </button>
         </div>
-        <div class="item-list" id="list-trusted-users"></div>
-    `;
-    trustedDiv.appendChild(trustedBox);
-    const trustedList = trustedBox.querySelector('#list-trusted-users');
-    const trustedUsers = whitelistData.trustedUsers || [];
-    trustedUsers.forEach(id => {
-        const itemDiv = document.createElement('div');
-        itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
-        itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeTrustedUser('${id}')">✕</button>`;
-        trustedList.appendChild(itemDiv);
-    });
-    container.appendChild(trustedDiv);
+    </div>
 
-    // ==================== Blacklisted Users ====================
-    const blacklistDiv = document.createElement('div');
-    blacklistDiv.className = 'category';
-    blacklistDiv.innerHTML = `<h3>❌ Blacklisted Users</h3>`;
-    const blacklistBox = document.createElement('div');
-    blacklistBox.className = 'item-box';
-    blacklistBox.innerHTML = `
-        <div class="input-row">
-            <input type="text" id="input-blacklisted-users" placeholder="User ID">
-            <button class="btn btn-add" onclick="addBlacklistedUser()">Add</button>
+    <div class="item-box">
+        <h4><i class="fas fa-list"></i> Triggers (${triggers.length})</h4>`;
+
+    if (triggers.length === 0) {
+        html += `<p style="color:var(--text-muted);">No triggers found</p>`;
+    } else {
+        triggers.forEach((t, i) => {
+            html += `<div class="setting-row">
+                <span><strong>${escapeHtml(t.trigger)}</strong> → ${escapeHtml((t.response || '').substring(0, 50))}...</span>
+                <button class="btn btn-danger btn-sm" onclick="removeTrigger(${i})">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>`;
+        });
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+// ================= WELCOME =================
+function renderWelcome(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-hand-wave"></i> Welcome</h4>
+        ${renderField('enabled', data?.enabled || false, 'welcome.enabled')}
+        ${renderField('channelId', data?.channelId || '', 'welcome.channelId')}
+        ${renderField('message', data?.message || '', 'welcome.message')}
+        ${renderField('embed', data?.embed || false, 'welcome.embed')}
+        ${renderField('color', data?.color || '#5865F2', 'welcome.color')}
+        ${renderField('imageUrl', data?.imageUrl || '', 'welcome.imageUrl')}
+        ${renderField('thumbnailUrl', data?.thumbnailUrl || '', 'welcome.thumbnailUrl')}
+        ${renderField('footer', data?.footer || '', 'welcome.footer')}
+        ${renderField('emoji', data?.emoji || '', 'welcome.emoji')}
+        ${renderField('mentionUser', data?.mentionUser ?? true, 'welcome.mentionUser')}
+        ${renderField('sendDM', data?.sendDM || false, 'welcome.sendDM')}
+        ${renderField('dmMessage', data?.dmMessage || '', 'welcome.dmMessage')}
+        ${renderField('autoDelete', data?.autoDelete || false, 'welcome.autoDelete')}
+        ${renderField('autoDeleteDelay', data?.autoDeleteDelay || 60000, 'welcome.autoDeleteDelay')}
+    </div>
+
+    <div class="item-box">
+        <h4><i class="fas fa-eye"></i> Preview</h4>
+        <div id="welcomePreview" style="padding:20px;background:var(--bg-primary);border-radius:10px;text-align:center;">
+            <p style="color:var(--text-muted);">Welcome message will appear here</p>
         </div>
-        <div class="item-list" id="list-blacklisted-users"></div>
-    `;
-    blacklistDiv.appendChild(blacklistBox);
-    const blacklistList = blacklistBox.querySelector('#list-blacklisted-users');
-    const blacklistedUsers = whitelistData.blacklistedUsers || [];
-    blacklistedUsers.forEach(id => {
-        const itemDiv = document.createElement('div');
-        itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
-        itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeBlacklistedUser('${id}')">✕</button>`;
-        blacklistList.appendChild(itemDiv);
-    });
-    container.appendChild(blacklistDiv);
+    </div>`;
+}
 
-    // ==================== Dangerous Roles ====================
-    const dangerousDiv = document.createElement('div');
-    dangerousDiv.className = 'category';
-    dangerousDiv.innerHTML = `<h3>⚠️ Dangerous Roles</h3>`;
-    const dangerousBox = document.createElement('div');
-    dangerousBox.className = 'item-box';
-    dangerousBox.innerHTML = `
-        <div class="input-row">
-            <input type="text" id="input-dangerous-roles" placeholder="Role ID">
-            <button class="btn btn-add" onclick="addDangerousRole()">Add</button>
+// ================= GOODBYE =================
+function renderGoodbye(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-hand-peace"></i> Goodbye</h4>
+        ${renderField('enabled', data?.enabled || false, 'goodbye.enabled')}
+        ${renderField('channelId', data?.channelId || '', 'goodbye.channelId')}
+        ${renderField('message', data?.message || '', 'goodbye.message')}
+        ${renderField('embed', data?.embed || false, 'goodbye.embed')}
+        ${renderField('color', data?.color || '#ED4245', 'goodbye.color')}
+        ${renderField('imageUrl', data?.imageUrl || '', 'goodbye.imageUrl')}
+        ${renderField('thumbnailUrl', data?.thumbnailUrl || '', 'goodbye.thumbnailUrl')}
+        ${renderField('footer', data?.footer || '', 'goodbye.footer')}
+        ${renderField('emoji', data?.emoji || '', 'goodbye.emoji')}
+        ${renderField('mentionUser', data?.mentionUser ?? true, 'goodbye.mentionUser')}
+        ${renderField('sendDM', data?.sendDM || false, 'goodbye.sendDM')}
+        ${renderField('dmMessage', data?.dmMessage || '', 'goodbye.dmMessage')}
+        ${renderField('autoDelete', data?.autoDelete || false, 'goodbye.autoDelete')}
+        ${renderField('autoDeleteDelay', data?.autoDeleteDelay || 60000, 'goodbye.autoDeleteDelay')}
+    </div>
+
+    <div class="item-box">
+        <h4><i class="fas fa-eye"></i> Preview</h4>
+        <div id="goodbyePreview" style="padding:20px;background:var(--bg-primary);border-radius:10px;text-align:center;">
+            <p style="color:var(--text-muted);">Goodbye message will appear here</p>
         </div>
-        <div class="item-list" id="list-dangerous-roles"></div>
-    `;
-    dangerousDiv.appendChild(dangerousBox);
-    const dangerousList = dangerousBox.querySelector('#list-dangerous-roles');
-    const dangerousRoles = whitelistData.dangerousRoles || [];
-    dangerousRoles.forEach(id => {
-        const itemDiv = document.createElement('div');
-        itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
-        itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeDangerousRole('${id}')">✕</button>`;
-        dangerousList.appendChild(itemDiv);
-    });
-    container.appendChild(dangerousDiv);
-
-    // ==================== Users ====================
-    const usersDiv = document.createElement('div');
-    usersDiv.className = 'category';
-    usersDiv.innerHTML = `<h3>👥 Users</h3>`;
-
-    actions.forEach(action => {
-        const actionBox = document.createElement('div');
-        actionBox.className = 'item-box';
-        actionBox.innerHTML = `
-            <h4>${action.toUpperCase()}</h4>
-            <div class="input-row">
-                <input type="text" id="input-users-${action}" placeholder="User ID">
-                <button class="btn btn-add" onclick="addWhitelistItem('users', '${action}')">Add</button>
-            </div>
-            <div class="item-list" id="list-users-${action}"></div>
-        `;
-        usersDiv.appendChild(actionBox);
-
-        const listDiv = actionBox.querySelector(`#list-users-${action}`);
-        const items = whitelistData.users?.[action] || [];
-        items.forEach(id => {
-            const itemDiv = document.createElement('div');
-            itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
-            itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeWhitelistItem('users', '${action}', '${id}')">✕</button>`;
-            listDiv.appendChild(itemDiv);
-        });
-    });
-
-    container.appendChild(usersDiv);
-
-    // ==================== Roles ====================
-    const rolesDiv = document.createElement('div');
-    rolesDiv.className = 'category';
-    rolesDiv.innerHTML = `<h3>🎭 Roles</h3>`;
-
-    actions.forEach(action => {
-        const actionBox = document.createElement('div');
-        actionBox.className = 'item-box';
-        actionBox.innerHTML = `
-            <h4>${action.toUpperCase()}</h4>
-            <div class="input-row">
-                <input type="text" id="input-roles-${action}" placeholder="Role ID">
-                <button class="btn btn-add" onclick="addWhitelistItem('roles', '${action}')">Add</button>
-            </div>
-            <div class="item-list" id="list-roles-${action}"></div>
-        `;
-        rolesDiv.appendChild(actionBox);
-
-        const listDiv = actionBox.querySelector(`#list-roles-${action}`);
-        const items = whitelistData.roles?.[action] || [];
-        items.forEach(id => {
-            const itemDiv = document.createElement('div');
-            itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
-            itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeWhitelistItem('roles', '${action}', '${id}')">✕</button>`;
-            listDiv.appendChild(itemDiv);
-        });
-    });
-
-    container.appendChild(rolesDiv);
-
-    // ==================== Channels ====================
-    const channelsDiv = document.createElement('div');
-    channelsDiv.className = 'category';
-    channelsDiv.innerHTML = `<h3>📢 Channels</h3>`;
-
-    actions.forEach(action => {
-        const actionBox = document.createElement('div');
-        actionBox.className = 'item-box';
-        actionBox.innerHTML = `
-            <h4>${action.toUpperCase()}</h4>
-            <div class="input-row">
-                <input type="text" id="input-channels-${action}" placeholder="Channel ID">
-                <button class="btn btn-add" onclick="addWhitelistItem('channels', '${action}')">Add</button>
-            </div>
-            <div class="item-list" id="list-channels-${action}"></div>
-        `;
-        channelsDiv.appendChild(actionBox);
-
-        const listDiv = actionBox.querySelector(`#list-channels-${action}`);
-        const items = whitelistData.channels?.[action] || [];
-        items.forEach(id => {
-            const itemDiv = document.createElement('div');
-            itemDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;';
-            itemDiv.innerHTML = `<span>${id}</span><button class="btn btn-remove" onclick="removeWhitelistItem('channels', '${action}', '${id}')">✕</button>`;
-            listDiv.appendChild(itemDiv);
-        });
-    });
-
-    container.appendChild(channelsDiv);
+    </div>`;
 }
 
-// ==================== Trusted Users Functions ====================
-async function addTrustedUser() {
-    const input = document.getElementById('input-trusted-users');
-    const id = input.value.trim();
-    if (!id) { alert('❌ تکایە ID بنووسە.'); return; }
-    try {
-        await fetch(`${API_BASE}/whitelist/add-trusted-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-        await fetchWhitelist();
-    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
-}
-
-async function removeTrustedUser(id) {
-    try {
-        await fetch(`${API_BASE}/whitelist/remove-trusted-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-        await fetchWhitelist();
-    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
-}
-
-// ==================== Blacklisted Users Functions ====================
-async function addBlacklistedUser() {
-    const input = document.getElementById('input-blacklisted-users');
-    const id = input.value.trim();
-    if (!id) { alert('❌ تکایە ID بنووسە.'); return; }
-    try {
-        await fetch(`${API_BASE}/whitelist/add-blacklisted-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-        await fetchWhitelist();
-    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
-}
-
-async function removeBlacklistedUser(id) {
-    try {
-        await fetch(`${API_BASE}/whitelist/remove-blacklisted-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-        await fetchWhitelist();
-    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
-}
-
-// ==================== Dangerous Roles Functions ====================
-async function addDangerousRole() {
-    const input = document.getElementById('input-dangerous-roles');
-    const id = input.value.trim();
-    if (!id) { alert('❌ تکایە ID بنووسە.'); return; }
-    try {
-        await fetch(`${API_BASE}/whitelist/add-dangerous-role`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-        await fetchWhitelist();
-    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
-}
-
-async function removeDangerousRole(id) {
-    try {
-        await fetch(`${API_BASE}/whitelist/remove-dangerous-role`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-        await fetchWhitelist();
-    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
-}
-
-// ==================== Whitelist Functions ====================
-async function addWhitelistItem(type, action) {
-    const input = document.getElementById(`input-${type}-${action}`);
-    if (!input) { alert('❌ خانەی ID نەدۆزرایەوە.'); return; }
-    const id = input.value.trim();
-    if (!id) { alert('❌ تکایە ID بنووسە.'); return; }
-    try {
-        await fetch(`${API_BASE}/whitelist/add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, action, id }) });
-        await fetchWhitelist();
-    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
-}
-
-async function removeWhitelistItem(type, action, id) {
-    try {
-        await fetch(`${API_BASE}/whitelist/remove`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, action, id }) });
-        await fetchWhitelist();
-    } catch (e) { alert('❌ هەڵەیەک ڕوویدا.'); }
-}
-
-// ==================== ANTI-SPAM ====================
-async function fetchAntiSpam() {
-    try {
-        const res = await fetch(`${API_BASE}/antispam`);
-        antispamData = await res.json();
-        renderAntiSpam();
-    } catch (e) { console.error(e); }
-}
-
-function renderAntiSpam() {
-    const container = document.getElementById('antispamContent');
-    if (!container) return;
-    container.innerHTML = '';
-    Object.keys(antispamData).forEach(module => {
-        const settings = antispamData[module];
-        if (typeof settings !== 'object' || settings === null) return;
-        const box = document.createElement('div');
-        box.className = 'item-box';
-        let fieldsHtml = '';
-        if (settings.enabled !== undefined) {
-            fieldsHtml += `<div class="setting-row"><span>Enabled:</span><input type="checkbox" ${settings.enabled ? 'checked' : ''} onchange="updateAntiSpam('${module}', 'enabled', this.checked)"></div>`;
-        }
-        ['max', 'threshold', 'maxJoins', 'maxConnects'].forEach(field => {
-            if (settings[field] !== undefined) {
-                fieldsHtml += `<div class="setting-row"><span>${field}:</span><input type="number" value="${settings[field]}" style="width:80px;" onchange="updateAntiSpam('${module}', '${field}', this.value)"></div>`;
-            }
-        });
-        if (settings.punishment !== undefined) {
-            fieldsHtml += `<div class="setting-row"><span>Punishment:</span><select onchange="updateAntiSpam('${module}', 'punishment', this.value)">
-                <option value="delete" ${settings.punishment === 'delete' ? 'selected' : ''}>Delete</option>
-                <option value="timeout" ${settings.punishment === 'timeout' ? 'selected' : ''}>Timeout</option>
-                <option value="kick" ${settings.punishment === 'kick' ? 'selected' : ''}>Kick</option>
-                <option value="ban" ${settings.punishment === 'ban' ? 'selected' : ''}>Ban</option>
-                <option value="warn" ${settings.punishment === 'warn' ? 'selected' : ''}>Warn</option>
-            </select></div>`;
-        }
-        box.innerHTML = `<h4>${module.toUpperCase()}</h4>${fieldsHtml}`;
-        container.appendChild(box);
-    });
-}
-
-async function updateAntiSpam(module, field, value) {
-    try { await fetch(`${API_BASE}/antispam/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ module, field, value }) }); await fetchAntiSpam(); } catch (e) { alert('Error'); }
-}
-
-// ==================== ANTI-NUKE ====================
-async function fetchAntiNuke() {
-    try {
-        const res = await fetch(`${API_BASE}/antinuke/config`);
-        antinukeData = await res.json();
-        renderAntiNuke();
-    } catch (e) { console.error(e); }
-}
-
-function renderAntiNuke() {
-    const container = document.getElementById('antinukeContent');
-    if (!container) return;
-    container.innerHTML = '';
-    Object.keys(antinukeData).forEach(action => {
-        const settings = antinukeData[action];
-        if (typeof settings !== 'object' || settings === null) return;
-        const box = document.createElement('div');
-        box.className = 'item-box';
-        let fieldsHtml = '';
-        if (settings.enabled !== undefined) {
-            fieldsHtml += `<div class="setting-row"><span>Enabled:</span><input type="checkbox" ${settings.enabled ? 'checked' : ''} onchange="updateAntiNuke('${action}', 'enabled', this.checked)"></div>`;
-        }
-        if (settings.max !== undefined) {
-            fieldsHtml += `<div class="setting-row"><span>Max:</span><input type="number" value="${settings.max}" style="width:80px;" onchange="updateAntiNuke('${action}', 'max', this.value)"></div>`;
-        }
-        if (settings.punishment !== undefined) {
-            fieldsHtml += `<div class="setting-row"><span>Punishment:</span><select onchange="updateAntiNuke('${action}', 'punishment', this.value)">
-                <option value="delete" ${settings.punishment === 'delete' ? 'selected' : ''}>Delete</option>
-                <option value="timeout" ${settings.punishment === 'timeout' ? 'selected' : ''}>Timeout</option>
-                <option value="kick" ${settings.punishment === 'kick' ? 'selected' : ''}>Kick</option>
-                <option value="ban" ${settings.punishment === 'ban' ? 'selected' : ''}>Ban</option>
-                <option value="detect" ${settings.punishment === 'detect' ? 'selected' : ''}>Detect</option>
-            </select></div>`;
-        }
-        box.innerHTML = `<h4>${action.toUpperCase()}</h4>${fieldsHtml}`;
-        container.appendChild(box);
-    });
-}
-
-async function updateAntiNuke(action, field, value) {
-    try { await fetch(`${API_BASE}/antinuke/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, field, value }) }); await fetchAntiNuke(); } catch (e) { alert('Error'); }
-}
-
-// ==================== ROLE LIMITS ====================
-async function fetchRoleLimits() {
-    try {
-        const res = await fetch(`${API_BASE}/rolelimits`);
-        const data = await res.json();
-        renderRoleLimits(data);
-    } catch (e) { console.error(e); }
-}
-
-function renderRoleLimits(data) {
-    const container = document.getElementById('roleLimitsContent');
-    if (!container) return;
-    container.innerHTML = '';
-    Object.keys(data).forEach(action => {
-        const settings = data[action];
-        if (typeof settings !== 'object' || settings === null) return;
-        const box = document.createElement('div');
-        box.className = 'item-box';
-        let fieldsHtml = '';
-        if (settings.enabled !== undefined) {
-            fieldsHtml += `<div class="setting-row"><span>Enabled:</span><input type="checkbox" ${settings.enabled ? 'checked' : ''} onchange="updateRoleLimits('${action}', 'enabled', this.checked)"></div>`;
-        }
-        if (settings.max !== undefined) {
-            fieldsHtml += `<div class="setting-row"><span>Max:</span><input type="number" value="${settings.max}" style="width:80px;" onchange="updateRoleLimits('${action}', 'max', this.value)"></div>`;
-        }
-        if (settings.punishment !== undefined) {
-            fieldsHtml += `<div class="setting-row"><span>Punishment:</span><select onchange="updateRoleLimits('${action}', 'punishment', this.value)">
-                <option value="delete" ${settings.punishment === 'delete' ? 'selected' : ''}>Delete</option>
-                <option value="timeout" ${settings.punishment === 'timeout' ? 'selected' : ''}>Timeout</option>
-                <option value="kick" ${settings.punishment === 'kick' ? 'selected' : ''}>Kick</option>
-                <option value="ban" ${settings.punishment === 'ban' ? 'selected' : ''}>Ban</option>
-                <option value="detect" ${settings.punishment === 'detect' ? 'selected' : ''}>Detect</option>
-            </select></div>`;
-        }
-        box.innerHTML = `<h4>${action.toUpperCase()}</h4>${fieldsHtml}`;
-        container.appendChild(box);
-    });
-}
-
-async function updateRoleLimits(action, field, value) {
-    try { await fetch(`${API_BASE}/rolelimits/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, field, value }) }); await fetchRoleLimits(); } catch (e) { alert('Error'); }
-}
-
-// ==================== BEAST MODE ====================
-async function fetchBeastMode() {
-    try {
-        const res = await fetch(`${API_BASE}/beastmode`);
-        const data = await res.json();
-        const btn = document.getElementById('beastModeBtn');
-        const status = document.getElementById('beastModeStatus');
-        if (btn) btn.innerText = data.enabled ? 'Disable' : 'Enable';
-        if (status) status.innerText = data.enabled ? '✅ Enabled' : '❌ Disabled';
-        const container = document.getElementById('beastmodeContent');
-        if (!container) return;
-        container.innerHTML = '';
-        const actions = data.actions || {};
-        Object.keys(actions).forEach(action => {
-            const settings = actions[action];
-            const box = document.createElement('div');
-            box.className = 'item-box';
-            let fieldsHtml = '';
-            if (settings.max !== undefined) fieldsHtml += `<div class="setting-row"><span>Max:</span><input type="number" value="${settings.max}" onchange="updateBeastMode('${action}', 'max', this.value)"></div>`;
-            if (settings.punishment !== undefined) fieldsHtml += `<div class="setting-row"><span>Punishment:</span><select onchange="updateBeastMode('${action}', 'punishment', this.value)"><option value="delete" ${settings.punishment === 'delete' ? 'selected' : ''}>Delete</option><option value="timeout" ${settings.punishment === 'timeout' ? 'selected' : ''}>Timeout</option><option value="kick" ${settings.punishment === 'kick' ? 'selected' : ''}>Kick</option><option value="ban" ${settings.punishment === 'ban' ? 'selected' : ''}>Ban</option></select></div>`;
-            box.innerHTML = `<h4>${action.toUpperCase()}</h4>${fieldsHtml}`;
-            container.appendChild(box);
-        });
-    } catch (e) { console.error(e); }
-}
-
-async function toggleBeastMode() {
-    try { await fetch(`${API_BASE}/beastmode/toggle`, { method: 'POST' }); await fetchBeastMode(); } catch (e) { alert('Error'); }
-}
-
-async function updateBeastMode(action, field, value) {
-    try { await fetch(`${API_BASE}/beastmode/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, field, value }) }); await fetchBeastMode(); } catch (e) { alert('Error'); }
-}
-
-// ==================== ANTI-RAID ====================
-async function fetchAntiRaid() {
-    try {
-        const res = await fetch(`${API_BASE}/antiraid`);
-        const data = await res.json();
-        const btn = document.getElementById('antiRaidBtn');
-        const status = document.getElementById('antiRaidStatus');
-        if (btn) btn.innerText = data.enabled ? 'Disable' : 'Enable';
-        if (status) status.innerText = data.enabled ? '✅ Enabled' : '❌ Disabled';
-        const container = document.getElementById('antiraidContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Join Rate:</span><input type="number" value="${data.joinRate || 5}" style="width:80px;" onchange="updateAntiRaid('joinRate', this.value)"></div>
-                <div class="setting-row"><span>Time Window (s):</span><input type="number" value="${data.timeWindow || 10}" style="width:80px;" onchange="updateAntiRaid('timeWindow', this.value)"></div>
-                <div class="setting-row"><span>Punishment:</span><select onchange="updateAntiRaid('punishment', this.value)"><option value="kick" ${data.punishment === 'kick' ? 'selected' : ''}>Kick</option><option value="ban" ${data.punishment === 'ban' ? 'selected' : ''}>Ban</option><option value="lockdown" ${data.punishment === 'lockdown' ? 'selected' : ''}>Lockdown</option></select></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('antiraid')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function toggleAntiRaid() {
-    try { await fetch(`${API_BASE}/antiraid/toggle`, { method: 'POST' }); await fetchAntiRaid(); } catch (e) { alert('Error'); }
-}
-
-async function updateAntiRaid(field, value) {
-    try { await fetch(`${API_BASE}/antiraid/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchAntiRaid(); } catch (e) { alert('Error'); }
-}
-
-// ==================== VERIFICATION ====================
-async function fetchVerification() {
-    try {
-        const res = await fetch(`${API_BASE}/verification`);
-        const data = await res.json();
-        const container = document.getElementById('verificationContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="toggleVerification(this.checked)"></div>
-                <div class="setting-row"><span>Verification Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateVerification('channelId', this.value)"></div>
-                <div class="setting-row"><span>Verification Role ID:</span><input type="text" value="${data.roleId || ''}" placeholder="Role ID" onchange="updateVerification('roleId', this.value)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('verification')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function toggleVerification(value) {
-    try { await fetch(`${API_BASE}/verification/toggle`, { method: 'POST' }); await fetchVerification(); } catch (e) { alert('Error'); }
-}
-
-async function updateVerification(field, value) {
-    try { await fetch(`${API_BASE}/verification/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchVerification(); } catch (e) { alert('Error'); }
-}
-
-// ==================== MODERATION ====================
-async function fetchModeration() {
-    try {
-        const res = await fetch(`${API_BASE}/moderation`);
-        const data = await res.json();
-        const container = document.getElementById('moderationContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateModeration('enabled', this.checked)"></div>
-                <div class="setting-row"><span>Log Channel ID:</span><input type="text" value="${data.logChannelId || ''}" placeholder="Channel ID" onchange="updateModeration('logChannelId', this.value)"></div>
-                <div class="setting-row"><span>Mute Role ID:</span><input type="text" value="${data.muteRoleId || ''}" placeholder="Role ID" onchange="updateModeration('muteRoleId', this.value)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('moderation')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function updateModeration(field, value) {
-    try { await fetch(`${API_BASE}/moderation/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchModeration(); } catch (e) { alert('Error'); }
-}
-
-// ==================== AUTO ROLE ====================
-async function fetchAutoRole() {
-    try {
-        const res = await fetch(`${API_BASE}/autorole`);
-        const data = await res.json();
-        renderAutoRole(data);
-    } catch (e) { console.error(e); }
-}
-
+// ================= AUTOROLE =================
 function renderAutoRole(data) {
-    const container = document.getElementById('autoroleContent');
-    if (!container) return;
-    let humanRolesHtml = '';
-    (data.roles || []).forEach(roleId => {
-        humanRolesHtml += `<div style="display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;"><span>${roleId}</span><button class="btn btn-remove" onclick="removeAutoRole('${roleId}', 'roles')">✕</button></div>`;
+    const humanRoles = data?.roles || [];
+    const botRoles = data?.botRoles || [];
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-user-tag"></i> Auto Role Settings</h4>
+        ${renderField('enabled', data?.enabled || false, 'autoRole.enabled')}
+        ${renderField('delay', data?.delay || 0, 'autoRole.delay')}
+        ${renderField('ignoreBots', data?.ignoreBots ?? true, 'autoRole.ignoreBots')}
+        ${renderField('humanOnly', data?.humanOnly ?? true, 'autoRole.humanOnly')}
+        ${renderField('requireVerification', data?.requireVerification || false, 'autoRole.requireVerification')}
+        ${renderField('roleDelay', data?.roleDelay || 3000, 'autoRole.roleDelay')}
+    </div>
+
+    <div class="item-box">
+        <h4><i class="fas fa-user"></i> Human Roles (${humanRoles.length})</h4>
+        <div class="setting-row">
+            <input type="text" id="human-role-input" placeholder="Role ID" style="width:250px;">
+            <button class="btn btn-primary btn-sm" onclick="addAutoRole('roles')">
+                <i class="fas fa-plus"></i> Add
+            </button>
+        </div>`;
+
+    humanRoles.forEach(r => {
+        html += `<div class="setting-row">
+            <span>${r}</span>
+            <button class="btn btn-danger btn-sm" onclick="removeAutoRole('${r}', 'roles')">
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        </div>`;
     });
-    let botRolesHtml = '';
-    (data.botRoles || []).forEach(roleId => {
-        botRolesHtml += `<div style="display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;"><span>${roleId}</span><button class="btn btn-remove" onclick="removeAutoRole('${roleId}', 'botRoles')">✕</button></div>`;
+
+    html += `</div>
+
+    <div class="item-box">
+        <h4><i class="fas fa-robot"></i> Bot Roles (${botRoles.length})</h4>
+        <div class="setting-row">
+            <input type="text" id="bot-role-input" placeholder="Role ID" style="width:250px;">
+            <button class="btn btn-primary btn-sm" onclick="addAutoRole('botRoles')">
+                <i class="fas fa-plus"></i> Add
+            </button>
+        </div>`;
+
+    botRoles.forEach(r => {
+        html += `<div class="setting-row">
+            <span>${r}</span>
+            <button class="btn btn-danger btn-sm" onclick="removeAutoRole('${r}', 'botRoles')">
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        </div>`;
     });
-    container.innerHTML = `
-        <div class="item-box">
-            <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="toggleAutoRole(this.checked)"></div>
-            <div class="setting-row"><span>Delay (s):</span><input type="number" value="${data.delay || 0}" style="width:100px;" onchange="updateAutoRole('delay', this.value)"></div>
-            <div class="setting-row"><span>Ignore Bots:</span><input type="checkbox" ${data.ignoreBots ? 'checked' : ''} onchange="updateAutoRole('ignoreBots', this.checked)"></div>
-        </div>
-        <div class="item-box">
-            <h4>Human Roles</h4>
-            <div class="input-row"><input type="text" id="human-role-input" placeholder="Role ID"><button class="btn btn-add" onclick="addAutoRole('roles')">Add</button></div>
-            <div style="margin-top:10px;">${humanRolesHtml || '<p style="color:#94a3b8;">No roles added.</p>'}</div>
-        </div>
-        <div class="item-box">
-            <h4>Bot Roles</h4>
-            <div class="input-row"><input type="text" id="bot-role-input" placeholder="Role ID"><button class="btn btn-add" onclick="addAutoRole('botRoles')">Add</button></div>
-            <div style="margin-top:10px;">${botRolesHtml || '<p style="color:#94a3b8;">No bot roles added.</p>'}</div>
-        </div>
-        <div style="margin-top: 20px; text-align: left;">
-            <button class="btn btn-save" onclick="saveSection('autorole')">💾 پاشەکەوتکردن</button>
-        </div>
-    `;
+
+    html += `</div>`;
+    return html;
 }
 
-async function toggleAutoRole(value) {
-    try { await fetch(`${API_BASE}/autorole/toggle`, { method: 'POST' }); await fetchAutoRole(); } catch (e) { alert('Error'); }
+// ================= LEVELS =================
+function renderLevels(data) {
+    const roleRewards = data?.roleRewards || [];
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-trophy"></i> Level Settings</h4>
+        ${renderField('enabled', data?.enabled || false, 'levels.enabled')}
+        ${renderField('channelId', data?.channelId || '', 'levels.channelId')}
+        ${renderField('pointsPerMessage', data?.pointsPerMessage || 5, 'levels.pointsPerMessage')}
+        ${renderField('pointsPerVoice', data?.pointsPerVoice || 10, 'levels.pointsPerVoice')}
+        ${renderField('cooldown', data?.cooldown || 60000, 'levels.cooldown')}
+        ${renderField('levelUpChannel', data?.levelUpChannel || '', 'levels.levelUpChannel')}
+        ${renderField('levelUpMessage', data?.levelUpMessage || '', 'levels.levelUpMessage')}
+        ${renderField('levelUpEmbed', data?.levelUpEmbed ?? true, 'levels.levelUpEmbed')}
+        ${renderField('levelUpColor', data?.levelUpColor || '#57F287', 'levels.levelUpColor')}
+        ${renderField('announceInDM', data?.announceInDM || false, 'levels.announceInDM')}
+        ${renderField('maxLevel', data?.maxLevel || 500, 'levels.maxLevel')}
+        ${renderField('xpMultiplier', data?.xpMultiplier || 1, 'levels.xpMultiplier')}
+        ${renderField('voiceXp', data?.voiceXp ?? true, 'levels.voiceXp')}
+        ${renderField('messageXp', data?.messageXp ?? true, 'levels.messageXp')}
+        ${renderField('streakBonus', data?.streakBonus ?? true, 'levels.streakBonus')}
+        ${renderField('streakMultiplier', data?.streakMultiplier || 1.5, 'levels.streakMultiplier')}
+    </div>
+
+    <div class="item-box">
+        <h4><i class="fas fa-award"></i> Role Rewards (${roleRewards.length})</h4>
+        <div class="setting-row">
+            <input type="number" id="level-input" placeholder="Level" style="width:100px;">
+            <input type="text" id="role-input" placeholder="Role ID" style="width:250px;">
+            <button class="btn btn-primary btn-sm" onclick="addLevelRole()">
+                <i class="fas fa-plus"></i> Add
+            </button>
+        </div>`;
+
+    roleRewards.forEach((r) => {
+        html += `<div class="setting-row">
+            <span>Level ${r.level} → ${r.roleId || 'None'}</span>
+            <button class="btn btn-danger btn-sm" onclick="removeLevelRole('${r.level}')">
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        </div>`;
+    });
+
+    if (roleRewards.length === 0) {
+        html += `<p style="color:var(--text-muted);">No role rewards found</p>`;
+    }
+
+    html += `</div>`;
+    return html;
 }
 
-async function updateAutoRole(field, value) {
-    try { await fetch(`${API_BASE}/autorole/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchAutoRole(); } catch (e) { alert('Error'); }
+// ================= LOGS =================
+function renderLogs(data) {
+    if (!data || typeof data !== 'object') {
+        return `<div class="item-box"><h4>Logs</h4><p>No data available</p></div>`;
+    }
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-file-lines"></i> Log Channels</h4>`;
+
+    Object.keys(data).forEach(key => {
+        html += renderField(key, data[key], `logChannels.${key}`);
+    });
+
+    html += `</div>`;
+    return html;
 }
 
+// ================= REACTION ROLES =================
+function renderReactionRoles(data) {
+    const roles = data?.roles || [];
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-face-smile"></i> Reaction Role Settings</h4>
+        ${renderField('enabled', data?.enabled || false, 'reactionRoles.enabled')}
+        ${renderField('maxRolesPerUser', data?.maxRolesPerUser || 5, 'reactionRoles.maxRolesPerUser')}
+        ${renderField('requireVerification', data?.requireVerification || false, 'reactionRoles.requireVerification')}
+        ${renderField('removeOnUnreact', data?.removeOnUnreact ?? true, 'reactionRoles.removeOnUnreact')}
+    </div>
+
+    <div class="item-box">
+        <h4><i class="fas fa-plus"></i> Add Reaction Role</h4>
+        <div class="setting-row">
+            <input type="text" id="rr-messageId" placeholder="Message ID" style="width:200px;">
+            <input type="text" id="rr-emoji" placeholder="Emoji" style="width:80px;">
+            <input type="text" id="rr-roleId" placeholder="Role ID" style="width:180px;">
+            <input type="text" id="rr-channelId" placeholder="Channel ID" style="width:180px;">
+            <button class="btn btn-primary btn-sm" onclick="addReactionRole()">
+                <i class="fas fa-plus"></i> Add
+            </button>
+        </div>
+    </div>
+
+    <div class="item-box">
+        <h4><i class="fas fa-list"></i> Roles (${roles.length})</h4>`;
+
+    roles.forEach((r, i) => {
+        html += `<div class="setting-row">
+            <span>${r.emoji || '❓'} → ${r.roleId || '❓'} (Message: ${r.messageId || '❓'})</span>
+            <button class="btn btn-danger btn-sm" onclick="removeReactionRole(${i})">
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        </div>`;
+    });
+
+    if (roles.length === 0) {
+        html += `<p style="color:var(--text-muted);">No roles found</p>`;
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+// ================= ANTISPAM =================
+function renderAntiSpam(data) {
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+        return `<div class="item-box">
+            <h4><i class="fas fa-shield-virus"></i> Anti-Spam</h4>
+            <p style="color:var(--text-muted);">No data available</p>
+        </div>`;
+    }
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-info-circle"></i> Guide</h4>
+        <p style="color:var(--text-muted);font-size:13px;">Anti-Spam system to protect the server from spam messages and disruptive voice behavior.</p>
+    </div>`;
+
+    html += renderUniversal(data, 'autoMod');
+
+    return html;
+}
+
+// ================= ANTINUKE =================
+function renderAntiNuke(data) {
+    if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
+        return `<div class="item-box">
+            <h4><i class="fas fa-bomb"></i> Anti-Nuke</h4>
+            <p style="color:var(--text-muted);">No data available</p>
+        </div>`;
+    }
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-info-circle"></i> Guide</h4>
+        <p style="color:var(--text-muted);font-size:13px;">Anti-Nuke system to protect the server from dangerous actions.</p>
+    </div>`;
+
+    html += renderUniversal(data, 'securityLimits');
+
+    return html;
+}
+
+// ================= BEASTMODE =================
+function renderBeastMode(data) {
+    const actions = data?.actions || {};
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-dragon"></i> Beast Mode</h4>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Beast Mode is a powerful protection system that applies severe punishments when activated.</p>
+        ${renderField('enabled', data?.enabled || false, 'beastMode.enabled')}
+        ${renderField('autoTrigger', data?.autoTrigger ?? true, 'beastMode.autoTrigger')}
+        ${renderField('triggerThreshold', data?.triggerThreshold || 10, 'beastMode.triggerThreshold')}
+        ${renderField('alertAll', data?.alertAll ?? true, 'beastMode.alertAll')}
+        ${renderField('autoLockdown', data?.autoLockdown ?? true, 'beastMode.autoLockdown')}
+    </div>`;
+
+    if (Object.keys(actions).length > 0) {
+        html += `<div class="item-box"><h4><i class="fas fa-list"></i> Actions</h4>`;
+
+        Object.keys(actions).forEach(action => {
+            html += `<div style="margin:16px 0;padding:16px;background:var(--bg-primary);border-radius:10px;border-right:3px solid #8B0000;">
+                <h5 style="color:#8B0000;margin-bottom:12px;font-size:14px;">
+                    <i class="fas fa-fire"></i> ${formatLabel(action)}
+                </h5>
+                ${renderUniversal(actions[action], `beastMode.actions.${action}`)}
+            </div>`;
+        });
+
+        html += `</div>`;
+    }
+
+    return html;
+}
+
+// ================= ANTIRAID =================
+function renderAntiRaid(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-users-slash"></i> Anti-Raid</h4>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Protection against mass member raids.</p>
+        ${renderField('enabled', data?.enabled || false, 'antiRaid.enabled')}
+        ${renderField('minAccountAge', data?.minAccountAge || 7, 'antiRaid.minAccountAge')}
+        ${renderField('checkAvatar', data?.checkAvatar ?? true, 'antiRaid.checkAvatar')}
+        ${renderField('checkUsername', data?.checkUsername ?? true, 'antiRaid.checkUsername')}
+        ${renderField('joinRate', data?.joinRate || 5, 'antiRaid.joinRate')}
+        ${renderField('timeWindow', data?.timeWindow || 10000, 'antiRaid.timeWindow')}
+        ${renderField('punishment', data?.punishment || 'kick', 'antiRaid.punishment')}
+        ${renderField('autoLockdown', data?.autoLockdown ?? true, 'antiRaid.autoLockdown')}
+        ${renderField('lockdownDuration', data?.lockdownDuration || 300000, 'antiRaid.lockdownDuration')}
+        ${renderField('maxJoinsPerUser', data?.maxJoinsPerUser || 3, 'antiRaid.maxJoinsPerUser')}
+        ${renderField('duplicateNameCheck', data?.duplicateNameCheck ?? true, 'antiRaid.duplicateNameCheck')}
+        ${renderField('duplicateAvatarCheck', data?.duplicateAvatarCheck ?? true, 'antiRaid.duplicateAvatarCheck')}
+        ${renderField('autoBan', data?.autoBan || false, 'antiRaid.autoBan')}
+        ${renderField('autoBanThreshold', data?.autoBanThreshold || 20, 'antiRaid.autoBanThreshold')}
+    </div>`;
+}
+
+// ================= VERIFICATION =================
+function renderVerification(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-user-check"></i> Verification</h4>
+        ${renderField('enabled', data?.enabled || false, 'verification.enabled')}
+        ${renderField('channelId', data?.channelId || '', 'verification.channelId')}
+        ${renderField('roleId', data?.roleId || '', 'verification.roleId')}
+        ${renderField('type', data?.type || 'button', 'verification.type')}
+        ${renderField('captchaLength', data?.captchaLength || 6, 'verification.captchaLength')}
+        ${renderField('captchaType', data?.captchaType || 'numbers', 'verification.captchaType')}
+        ${renderField('timeout', data?.timeout || 300000, 'verification.timeout')}
+        ${renderField('maxAttempts', data?.maxAttempts || 3, 'verification.maxAttempts')}
+        ${renderField('kickOnFail', data?.kickOnFail || false, 'verification.kickOnFail')}
+        ${renderField('logChannelId', data?.logChannelId || '', 'verification.logChannelId')}
+        ${renderField('welcomeDM', data?.welcomeDM ?? true, 'verification.welcomeDM')}
+        ${renderField('welcomeDMMessage', data?.welcomeDMMessage || '', 'verification.welcomeDMMessage')}
+        ${renderField('autoVerify', data?.autoVerify || false, 'verification.autoVerify')}
+    </div>`;
+}
+
+// ================= MODERATION =================
+function renderModeration(data) {
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-gavel"></i> Moderation</h4>
+        ${renderField('enabled', data?.enabled || false, 'moderation.enabled')}
+        ${renderField('logChannelId', data?.logChannelId || '', 'moderation.logChannelId')}
+        ${renderField('muteRoleId', data?.muteRoleId || '', 'moderation.muteRoleId')}
+        ${renderField('autoDeleteMessages', data?.autoDeleteMessages || false, 'moderation.autoDeleteMessages')}
+        ${renderField('autoDeleteDelay', data?.autoDeleteDelay || 5000, 'moderation.autoDeleteDelay')}
+        ${renderField('maxWarnings', data?.maxWarnings || 5, 'moderation.maxWarnings')}
+        ${renderField('warningExpiry', data?.warningExpiry || 7, 'moderation.warningExpiry')}
+        ${renderField('dmOnPunish', data?.dmOnPunish ?? true, 'moderation.dmOnPunish')}
+        ${renderField('dmOnWarn', data?.dmOnWarn ?? true, 'moderation.dmOnWarn')}
+        ${renderField('dmOnMute', data?.dmOnMute ?? true, 'moderation.dmOnMute')}
+        ${renderField('dmOnKick', data?.dmOnKick ?? true, 'moderation.dmOnKick')}
+        ${renderField('dmOnBan', data?.dmOnBan ?? true, 'moderation.dmOnBan')}
+        ${renderField('autoPunish', data?.autoPunish ?? true, 'moderation.autoPunish')}
+        ${renderField('autoPunishThreshold', data?.autoPunishThreshold || 3, 'moderation.autoPunishThreshold')}
+        ${renderField('autoPunishAction', data?.autoPunishAction || 'timeout', 'moderation.autoPunishAction')}
+    </div>`;
+
+    if (data?.punishmentLadder) {
+        html += `<div class="item-box">
+            <h4><i class="fas fa-stairs"></i> Punishment Ladder</h4>
+            ${renderUniversal(data.punishmentLadder, 'moderation.punishmentLadder')}
+        </div>`;
+    }
+
+    return html;
+}
+
+// ================= ROLELIMITS =================
+function renderRoleLimits(data) {
+    if (!data || typeof data !== 'object') {
+        return `<div class="item-box"><h4><i class="fas fa-users-gear"></i> Role Limits</h4><p>No data available</p></div>`;
+    }
+
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-info-circle"></i> Guide</h4>
+        <p style="color:var(--text-muted);font-size:13px;">Limits for actions performed by members.</p>
+    </div>`;
+
+    Object.keys(data).forEach(action => {
+        html += `<div class="item-box">
+            <h4><i class="fas fa-users-gear"></i> ${formatLabel(action)}</h4>
+            ${renderUniversal(data[action], `roleLimits.${action}`)}
+        </div>`;
+    });
+
+    return html;
+}
+
+// ================= GAMES =================
+function renderGames(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-gamepad"></i> Games</h4>
+        ${renderField('enabled', data?.enabled || false, 'games.enabled')}
+        ${renderField('channelId', data?.channelId || '', 'games.channelId')}
+        ${renderField('trivia', data?.trivia ?? true, 'games.trivia')}
+        ${renderField('wordle', data?.wordle ?? true, 'games.wordle')}
+        ${renderField('truthordare', data?.truthordare ?? true, 'games.truthordare')}
+        ${renderField('wouldyourather', data?.wouldyourather ?? true, 'games.wouldyourather')}
+        ${renderField('showCorrectAnswer', data?.showCorrectAnswer ?? true, 'games.showCorrectAnswer')}
+        ${renderField('showWrongAnswer', data?.showWrongAnswer ?? true, 'games.showWrongAnswer')}
+        ${renderField('pointsPerWin', data?.pointsPerWin || 10, 'games.pointsPerWin')}
+        ${renderField('cooldown', data?.cooldown || 5000, 'games.cooldown')}
+        ${renderField('maxQuestions', data?.maxQuestions || 10, 'games.maxQuestions')}
+        ${renderField('difficulty', data?.difficulty || 'medium', 'games.difficulty')}
+        ${renderField('timeLimit', data?.timeLimit || 30, 'games.timeLimit')}
+        ${renderField('rewardMultiplier', data?.rewardMultiplier || 1, 'games.rewardMultiplier')}
+        ${renderField('streakBonus', data?.streakBonus ?? true, 'games.streakBonus')}
+        ${renderField('streakMultiplier', data?.streakMultiplier || 1.5, 'games.streakMultiplier')}
+    </div>`;
+}
+
+// ================= ANNOUNCEMENTS =================
+function renderAnnouncements(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-bullhorn"></i> Announcements</h4>
+        ${renderField('enabled', data?.enabled || false, 'announcements.enabled')}
+        ${renderField('defaultChannel', data?.defaultChannel || '', 'announcements.defaultChannel')}
+        ${renderField('mentionEveryone', data?.mentionEveryone || false, 'announcements.mentionEveryone')}
+        ${renderField('embed', data?.embed ?? true, 'announcements.embed')}
+        ${renderField('color', data?.color || '#5865F2', 'announcements.color')}
+        ${renderField('autoDelete', data?.autoDelete || false, 'announcements.autoDelete')}
+        ${renderField('autoDeleteDelay', data?.autoDeleteDelay || 30000, 'announcements.autoDeleteDelay')}
+        ${renderField('allowAttachments', data?.allowAttachments ?? true, 'announcements.allowAttachments')}
+        ${renderField('allowEmbeds', data?.allowEmbeds ?? true, 'announcements.allowEmbeds')}
+        ${renderField('pinMessages', data?.pinMessages || false, 'announcements.pinMessages')}
+        ${renderField('crosspost', data?.crosspost || false, 'announcements.crosspost')}
+    </div>`;
+}
+
+// ================= COLORROLES =================
+function renderColorRoles(data) {
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-palette"></i> Color Roles</h4>
+        ${renderField('enabled', data?.enabled || false, 'colorRoles.enabled')}
+        ${renderField('channelId', data?.channelId || '', 'colorRoles.channelId')}
+        ${renderField('maxRoles', data?.maxRoles || 5, 'colorRoles.maxRoles')}
+        ${renderField('allowMultiple', data?.allowMultiple || false, 'colorRoles.allowMultiple')}
+        ${renderField('requireBoost', data?.requireBoost || false, 'colorRoles.requireBoost')}
+        ${renderField('requireLevel', data?.requireLevel || 0, 'colorRoles.requireLevel')}
+        ${renderField('cooldown', data?.cooldown || 60000, 'colorRoles.cooldown')}
+    </div>`;
+
+    if (data?.colorList && Array.isArray(data.colorList) && data.colorList.length > 0) {
+        html += `<div class="item-box">
+            <h4><i class="fas fa-palette"></i> Color List (${data.colorList.length})</h4>`;
+
+        data.colorList.forEach((c) => {
+            html += `<div class="setting-row">
+                <span>
+                    <span style="display:inline-block;width:20px;height:20px;background:${c.hex};border-radius:4px;margin-right:8px;vertical-align:middle;"></span>
+                    ${c.name} - ${c.hex}
+                </span>
+            </div>`;
+        });
+
+        html += `</div>`;
+    }
+
+    return html;
+}
+
+// ================= INVITETRACKER =================
+function renderInviteTracker(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-envelope"></i> Invite Tracker</h4>
+        ${renderField('enabled', data?.enabled || false, 'inviteTracker.enabled')}
+        ${renderField('channelId', data?.channelId || '', 'inviteTracker.channelId')}
+        ${renderField('logJoins', data?.logJoins ?? true, 'inviteTracker.logJoins')}
+        ${renderField('logLeaves', data?.logLeaves ?? true, 'inviteTracker.logLeaves')}
+        ${renderField('trackFake', data?.trackFake ?? true, 'inviteTracker.trackFake')}
+        ${renderField('minAccountAge', data?.minAccountAge || 7, 'inviteTracker.minAccountAge')}
+        ${renderField('leaderboard', data?.leaderboard ?? true, 'inviteTracker.leaderboard')}
+        ${renderField('leaderboardChannelId', data?.leaderboardChannelId || '', 'inviteTracker.leaderboardChannelId')}
+        ${renderField('fakeInviteThreshold', data?.fakeInviteThreshold || 3, 'inviteTracker.fakeInviteThreshold')}
+        ${renderField('fakeInvitePunishment', data?.fakeInvitePunishment || 'kick', 'inviteTracker.fakeInvitePunishment')}
+    </div>`;
+}
+
+// ================= TICKETS =================
+function renderTickets(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-ticket"></i> Tickets</h4>
+        ${renderField('enabled', data?.enabled || false, 'tickets.enabled')}
+        ${renderField('categoryId', data?.categoryId || '', 'tickets.categoryId')}
+        ${renderField('supportRoleId', data?.supportRoleId || '', 'tickets.supportRoleId')}
+        ${renderField('logChannelId', data?.logChannelId || '', 'tickets.logChannelId')}
+        ${renderField('maxTickets', data?.maxTickets || 3, 'tickets.maxTickets')}
+        ${renderField('transcripts', data?.transcripts ?? true, 'tickets.transcripts')}
+        ${renderField('autoClose', data?.autoClose || 86400000, 'tickets.autoClose')}
+        ${renderField('closeReason', data?.closeReason || 'Ticket closed by system', 'tickets.closeReason')}
+        ${renderField('dmOnClose', data?.dmOnClose ?? true, 'tickets.dmOnClose')}
+        ${renderField('ratingSystem', data?.ratingSystem || false, 'tickets.ratingSystem')}
+        ${renderField('ratingChannelId', data?.ratingChannelId || '', 'tickets.ratingChannelId')}
+        ${renderField('ticketNameFormat', data?.ticketNameFormat || 'ticket-{user}', 'tickets.ticketNameFormat')}
+        ${renderField('welcomeMessage', data?.welcomeMessage || '', 'tickets.welcomeMessage')}
+    </div>`;
+}
+
+// ================= GIVEAWAYS =================
+function renderGiveaways(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-gift"></i> Giveaways</h4>
+        ${renderField('enabled', data?.enabled || false, 'giveaways.enabled')}
+        ${renderField('defaultDuration', data?.defaultDuration || 86400000, 'giveaways.defaultDuration')}
+        ${renderField('defaultWinners', data?.defaultWinners || 1, 'giveaways.defaultWinners')}
+        ${renderField('requiredRoleId', data?.requiredRoleId || '', 'giveaways.requiredRoleId')}
+        ${renderField('requiredLevel', data?.requiredLevel || 0, 'giveaways.requiredLevel')}
+        ${renderField('minAccountAge', data?.minAccountAge || 7, 'giveaways.minAccountAge')}
+        ${renderField('requireBoost', data?.requireBoost || false, 'giveaways.requireBoost')}
+        ${renderField('autoDelete', data?.autoDelete ?? true, 'giveaways.autoDelete')}
+        ${renderField('rerollEnabled', data?.rerollEnabled ?? true, 'giveaways.rerollEnabled')}
+        ${renderField('maxRerolls', data?.maxRerolls || 3, 'giveaways.maxRerolls')}
+        ${renderField('dmWinners', data?.dmWinners ?? true, 'giveaways.dmWinners')}
+        ${renderField('hostBonus', data?.hostBonus || 1, 'giveaways.hostBonus')}
+        ${renderField('boosterBonus', data?.boosterBonus || 2, 'giveaways.boosterBonus')}
+    </div>`;
+}
+
+// ================= WARNS =================
+function renderWarns(data) {
+    return `<div class="item-box">
+        <h4><i class="fas fa-triangle-exclamation"></i> Warns</h4>
+        ${renderField('enabled', data?.enabled || false, 'warns.enabled')}
+        ${renderField('autoPunish', data?.autoPunish ?? true, 'warns.autoPunish')}
+        ${renderField('maxWarns', data?.maxWarns || 3, 'warns.maxWarns')}
+        ${renderField('punishment', data?.punishment || 'timeout', 'warns.punishment')}
+        ${renderField('logChannelId', data?.logChannelId || '', 'warns.logChannelId')}
+        ${renderField('dmOnWarn', data?.dmOnWarn ?? true, 'warns.dmOnWarn')}
+        ${renderField('warningExpiry', data?.warningExpiry || 7, 'warns.warningExpiry')}
+        ${renderField('appealable', data?.appealable ?? true, 'warns.appealable')}
+        ${renderField('appealChannelId', data?.appealChannelId || '', 'warns.appealChannelId')}
+        ${renderField('autoDelete', data?.autoDelete || false, 'warns.autoDelete')}
+    </div>`;
+}
+
+// ================= RISKSCORE =================
+function renderRiskScore(data) {
+    let html = `<div class="item-box">
+        <h4><i class="fas fa-chart-simple"></i> Risk Score</h4>
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Risk scoring system based on member actions.</p>
+        ${renderField('enabled', data?.enabled ?? true, 'riskSystem.enabled')}
+        ${renderField('decayEnabled', data?.decayEnabled ?? true, 'riskSystem.decayEnabled')}
+        ${renderField('decayDays', data?.decayDays || 1, 'riskSystem.decayDays')}
+        ${renderField('decayAmount', data?.decayAmount || 5, 'riskSystem.decayAmount')}
+        ${renderField('notifyOwner', data?.notifyOwner ?? true, 'riskSystem.notifyOwner')}
+    </div>`;
+
+    if (data?.thresholds) {
+        html += `<div class="item-box">
+            <h4><i class="fas fa-stairs"></i> Punishment Thresholds</h4>
+            ${renderUniversal(data.thresholds, 'riskSystem.thresholds')}
+        </div>`;
+    }
+
+    return html;
+}
+
+// ================= SAVE SECTION =================
+async function saveCurrentSection() {
+    const content = document.getElementById('content');
+    const section = state.currentSection;
+    const inputs = content.querySelectorAll('[data-config-path]');
+
+    if (inputs.length === 0) {
+        showToast('No fields to save', 'warning');
+        return;
+    }
+
+    const updates = {};
+
+    for (const input of inputs) {
+        const path = input.getAttribute('data-config-path');
+        const type = input.getAttribute('data-type');
+        let value;
+
+        if (type === 'boolean') value = input.checked;
+        else if (type === 'number') value = Number(input.value) || 0;
+        else if (type === 'array') value = input.value.split(',').map(s => s.trim()).filter(s => s);
+        else value = input.value;
+
+        updates[path] = value;
+    }
+
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
+    try {
+        const result = await API.post(`/${section}/update-bulk`, { updates });
+
+        if (result && result.success) {
+            showToast('Saved successfully!', 'success');
+            updateSaveButtonState(false);
+            state.originalData = JSON.parse(JSON.stringify(state.data));
+        } else {
+            showToast('Failed to save', 'error');
+        }
+    } catch (error) {
+        console.error('Save Error:', error);
+        showToast('Server error', 'error');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            updateSaveButtonState(false);
+        }
+    }
+}
+
+// ================= AUTO SAVE =================
+let autoSaveTimer = null;
+
+function startAutoSave() {
+    if (autoSaveTimer) clearInterval(autoSaveTimer);
+    autoSaveTimer = setInterval(() => {
+        if (state.unsavedChanges) {
+            console.log('Auto-saving...');
+            saveCurrentSection();
+        }
+    }, CONFIG.AUTO_SAVE_INTERVAL);
+}
+
+// ================= DETECT CHANGES =================
+function detectChanges() {
+    const content = document.getElementById('content');
+    const inputs = content.querySelectorAll('[data-config-path]');
+
+    inputs.forEach(input => {
+        input.addEventListener('change', () => {
+            updateSaveButtonState(true);
+        });
+        input.addEventListener('input', () => {
+            updateSaveButtonState(true);
+        });
+    });
+}
+
+// ================= TRIGGER ACTIONS =================
+async function addTrigger() {
+    const triggerInput = document.getElementById('trigger-name');
+    const responseInput = document.getElementById('trigger-response');
+
+    if (!triggerInput || !responseInput) return;
+
+    const trigger = triggerInput.value.trim();
+    const response = responseInput.value.trim();
+
+    if (!trigger) return showToast('Enter a trigger', 'warning');
+    if (!response) return showToast('Enter a response', 'warning');
+
+    const result = await API.post('/triggers/add', {
+        trigger,
+        response,
+        matchType: 'normal',
+        useEmbed: false
+    });
+
+    if (result && result.success) {
+        showToast('Trigger added!', 'success');
+        loadSection('triggers');
+    } else {
+        showToast(result?.error || 'Failed to add', 'error');
+    }
+}
+
+async function removeTrigger(index) {
+    if (!confirm('Are you sure you want to remove this trigger?')) return;
+
+    const result = await API.post('/triggers/remove', { index });
+
+    if (result && result.success) {
+        showToast('Removed!', 'success');
+        loadSection('triggers');
+    } else {
+        showToast('Failed to remove', 'error');
+    }
+}
+
+// ================= AUTOROLE ACTIONS =================
 async function addAutoRole(type) {
     const inputId = type === 'roles' ? 'human-role-input' : 'bot-role-input';
     const input = document.getElementById(inputId);
+
+    if (!input) return;
+
     const roleId = input.value.trim();
-    if (!roleId) return;
-    try { await fetch(`${API_BASE}/autorole/add-role`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roleId, type }) }); await fetchAutoRole(); } catch (e) { alert('Error'); }
+    if (!roleId) return showToast('Enter a Role ID', 'warning');
+
+    const result = await API.post('/autorole/add-role', { roleId, type });
+
+    if (result && result.success) {
+        showToast('Role added!', 'success');
+        input.value = '';
+        loadSection('autorole');
+    } else {
+        showToast('Failed to add', 'error');
+    }
 }
 
 async function removeAutoRole(roleId, type) {
-    try { await fetch(`${API_BASE}/autorole/remove-role`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ roleId, type }) }); await fetchAutoRole(); } catch (e) { alert('Error'); }
+    if (!confirm('Are you sure you want to remove this role?')) return;
+
+    const result = await API.post('/autorole/remove-role', { roleId, type });
+
+    if (result && result.success) {
+        showToast('Removed!', 'success');
+        loadSection('autorole');
+    } else {
+        showToast('Failed to remove', 'error');
+    }
 }
 
-// ==================== LOG CHANNELS ====================
-async function fetchLogs() {
-    try {
-        const res = await fetch(`${API_BASE}/logs/channels`);
-        const data = await res.json();
-        renderLogs(data);
-    } catch (e) { console.error(e); }
-}
-
-function renderLogs(data) {
-    const container = document.getElementById('logsContent');
-    if (!container) return;
-    container.innerHTML = '';
-    const categories = [
-        { title: 'Member Logs', keys: ['memberBanned', 'memberUnbanned', 'memberKicked', 'memberJoined', 'memberLeft', 'nicknameChanged', 'memberRolesUpdated', 'memberTimeout'] },
-        { title: 'Channel Logs', keys: ['channelCreated', 'channelDeleted', 'channelUpdated', 'channelPermissionsUpdated'] },
-        { title: 'Role Logs', keys: ['roleCreated', 'roleDeleted', 'roleUpdated', 'roleGiven', 'roleRemoved'] },
-        { title: 'Voice Logs', keys: ['voiceJoined', 'voiceLeft', 'voiceMoved', 'voiceStateUpdated'] },
-        { title: 'Message Logs', keys: ['messageDeleted', 'messageEdited'] },
-        { title: 'Server Logs', keys: ['serverUpdated', 'threadCreated', 'threadDeleted', 'threadUpdated'] },
-        { title: 'General', keys: ['general'] }
-    ];
-    categories.forEach(cat => {
-        const catDiv = document.createElement('div');
-        catDiv.className = 'category';
-        catDiv.innerHTML = `<h3>${cat.title}</h3>`;
-        cat.keys.forEach(key => {
-            const box = document.createElement('div');
-            box.className = 'item-box';
-            box.innerHTML = `
-                <div class="setting-row">
-                    <span>${formatLogName(key)}:</span>
-                    <input type="text" id="log-${key}" value="${data[key] || ''}" placeholder="Channel ID" style="width:150px;">
-                    <button class="btn btn-add" onclick="setLogChannel('${key}')">Set</button>
-                </div>
-            `;
-            catDiv.appendChild(box);
-        });
-        container.appendChild(catDiv);
-    });
-}
-
-function formatLogName(key) {
-    const names = {
-        memberBanned: 'Member Banned', memberUnbanned: 'Member Unbanned', memberKicked: 'Member Kicked',
-        memberJoined: 'Member Joined', memberLeft: 'Member Left', nicknameChanged: 'Nickname Changed',
-        memberRolesUpdated: 'Member Roles Updated', memberTimeout: 'Timeout (Given/Removed)',
-        channelCreated: 'Channel Created', channelDeleted: 'Channel Deleted', channelUpdated: 'Channel Updated',
-        channelPermissionsUpdated: 'Channel Permissions Updated', roleCreated: 'Role Created',
-        roleDeleted: 'Role Deleted', roleUpdated: 'Role Updated', roleGiven: 'Role Given', roleRemoved: 'Role Removed',
-        voiceJoined: 'Member Joined Voice', voiceLeft: 'Member Left Voice', voiceMoved: 'Member Moved Voice',
-        voiceStateUpdated: 'Voice State (Mute/Deafen)', messageDeleted: 'Message Deleted', messageEdited: 'Message Edited',
-        serverUpdated: 'Server Updated', threadCreated: 'Thread Created', threadDeleted: 'Thread Deleted',
-        threadUpdated: 'Thread Updated', general: 'General'
-    };
-    return names[key] || key;
-}
-
-async function setLogChannel(type) {
-    const input = document.getElementById(`log-${type}`);
-    const channelId = input.value.trim();
-    if (!channelId) return;
-    try { await fetch(`${API_BASE}/logs/set-channel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, channelId }) }); await fetchLogs(); } catch (e) { alert('Error'); }
-}
-
-// ==================== WELCOME ====================
-async function fetchWelcome() {
-    try {
-        const res = await fetch(`${API_BASE}/welcome`);
-        const data = await res.json();
-        const container = document.getElementById('welcomeContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="toggleWelcome(this.checked)"></div>
-                <div class="setting-row"><span>Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateWelcome('channelId', this.value)"></div>
-                <div class="setting-row"><span>Message:</span><textarea style="width:100%; height:80px; padding:5px; border-radius:5px; border:1px solid #334155; background:#1e293b; color:#fff;" onchange="updateWelcome('message', this.value)">${data.message || ''}</textarea></div>
-                <div class="setting-row"><span>Embed:</span><input type="checkbox" ${data.embed ? 'checked' : ''} onchange="updateWelcome('embed', this.checked)"></div>
-                <div class="setting-row"><span>Color:</span><input type="color" value="${data.color || '#5865F2'}" onchange="updateWelcome('color', this.value)"></div>
-                <div class="setting-row"><span>Image URL:</span><input type="text" value="${data.imageUrl || ''}" placeholder="Image URL" onchange="updateWelcome('imageUrl', this.value)"></div>
-                <div class="setting-row"><span>Thumbnail URL:</span><input type="text" value="${data.thumbnailUrl || ''}" placeholder="Thumbnail URL" onchange="updateWelcome('thumbnailUrl', this.value)"></div>
-                <div class="setting-row"><span>Footer:</span><input type="text" value="${data.footer || ''}" placeholder="Footer" onchange="updateWelcome('footer', this.value)"></div>
-                <div class="setting-row"><span>Emoji:</span><input type="text" value="${data.emoji || ''}" placeholder="Emoji" onchange="updateWelcome('emoji', this.value)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('welcome')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function toggleWelcome(value) {
-    try { await fetch(`${API_BASE}/welcome/toggle`, { method: 'POST' }); await fetchWelcome(); } catch (e) { alert('Error'); }
-}
-
-async function updateWelcome(field, value) {
-    try { await fetch(`${API_BASE}/welcome/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchWelcome(); } catch (e) { alert('Error'); }
-}
-
-// ==================== GOODBYE ====================
-async function fetchGoodbye() {
-    try {
-        const res = await fetch(`${API_BASE}/goodbye`);
-        const data = await res.json();
-        const container = document.getElementById('goodbyeContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="toggleGoodbye(this.checked)"></div>
-                <div class="setting-row"><span>Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateGoodbye('channelId', this.value)"></div>
-                <div class="setting-row"><span>Message:</span><textarea style="width:100%; height:80px; padding:5px; border-radius:5px; border:1px solid #334155; background:#1e293b; color:#fff;" onchange="updateGoodbye('message', this.value)">${data.message || ''}</textarea></div>
-                <div class="setting-row"><span>Embed:</span><input type="checkbox" ${data.embed ? 'checked' : ''} onchange="updateGoodbye('embed', this.checked)"></div>
-                <div class="setting-row"><span>Color:</span><input type="color" value="${data.color || '#5865F2'}" onchange="updateGoodbye('color', this.value)"></div>
-                <div class="setting-row"><span>Image URL:</span><input type="text" value="${data.imageUrl || ''}" placeholder="Image URL" onchange="updateGoodbye('imageUrl', this.value)"></div>
-                <div class="setting-row"><span>Thumbnail URL:</span><input type="text" value="${data.thumbnailUrl || ''}" placeholder="Thumbnail URL" onchange="updateGoodbye('thumbnailUrl', this.value)"></div>
-                <div class="setting-row"><span>Footer:</span><input type="text" value="${data.footer || ''}" placeholder="Footer" onchange="updateGoodbye('footer', this.value)"></div>
-                <div class="setting-row"><span>Emoji:</span><input type="text" value="${data.emoji || ''}" placeholder="Emoji" onchange="updateGoodbye('emoji', this.value)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('goodbye')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function toggleGoodbye(value) {
-    try { await fetch(`${API_BASE}/goodbye/toggle`, { method: 'POST' }); await fetchGoodbye(); } catch (e) { alert('Error'); }
-}
-
-async function updateGoodbye(field, value) {
-    try { await fetch(`${API_BASE}/goodbye/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchGoodbye(); } catch (e) { alert('Error'); }
-}
-
-// ==================== REACTION ROLES ====================
-async function fetchReactionRoles() {
-    try {
-        const res = await fetch(`${API_BASE}/reactionroles`);
-        const data = await res.json();
-        renderReactionRoles(data);
-    } catch (e) { console.error(e); }
-}
-
-function renderReactionRoles(data) {
-    const container = document.getElementById('reactionRolesContent');
-    if (!container) return;
-    let rolesHtml = '';
-    (data.roles || []).forEach((role, index) => {
-        rolesHtml += `
-            <div class="item-list">
-                <div class="setting-row"><span>Message ID:</span><input type="text" value="${role.messageId || ''}" readonly></div>
-                <div class="setting-row"><span>Emoji:</span><input type="text" value="${role.emoji || ''}" readonly></div>
-                <div class="setting-row"><span>Role ID:</span><input type="text" value="${role.roleId || ''}" readonly></div>
-                <div class="setting-row"><span>Channel ID:</span><input type="text" value="${role.channelId || ''}" readonly></div>
-                <button class="btn btn-remove" onclick="removeReactionRole(${index})">✕ Remove</button>
-            </div>
-        `;
-    });
-    container.innerHTML = `
-        <div class="item-box">
-            <h4>Add Reaction Role</h4>
-            <div class="setting-row"><span>Message ID:</span><input type="text" id="rr-messageId" placeholder="Message ID"></div>
-            <div class="setting-row"><span>Emoji:</span><input type="text" id="rr-emoji" placeholder="Emoji"></div>
-            <div class="setting-row"><span>Role ID:</span><input type="text" id="rr-roleId" placeholder="Role ID"></div>
-            <div class="setting-row"><span>Channel ID:</span><input type="text" id="rr-channelId" placeholder="Channel ID"></div>
-            <button class="btn btn-add" onclick="addReactionRole()">Add</button>
-        </div>
-        <h4>Reaction Roles:</h4>
-        ${rolesHtml || '<p style="color:#94a3b8;">No reaction roles.</p>'}
-        <div style="margin-top: 20px; text-align: left;">
-            <button class="btn btn-save" onclick="saveSection('reactionroles')">💾 پاشەکەوتکردن</button>
-        </div>
-    `;
-}
-
-async function addReactionRole() {
-    const messageId = document.getElementById('rr-messageId').value.trim();
-    const emoji = document.getElementById('rr-emoji').value.trim();
-    const roleId = document.getElementById('rr-roleId').value.trim();
-    const channelId = document.getElementById('rr-channelId').value.trim();
-    if (!messageId || !emoji || !roleId || !channelId) { alert('Please fill all fields'); return; }
-    try { await fetch(`${API_BASE}/reactionroles/add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageId, emoji, roleId, channelId }) }); await fetchReactionRoles(); } catch (e) { alert('Error'); }
-}
-
-async function removeReactionRole(index) {
-    try { await fetch(`${API_BASE}/reactionroles/remove`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ index }) }); await fetchReactionRoles(); } catch (e) { alert('Error'); }
-}
-
-// ==================== INVITE TRACKER ====================
-async function fetchInviteTracker() {
-    try {
-        const res = await fetch(`${API_BASE}/invitetracker`);
-        const data = await res.json();
-        const container = document.getElementById('inviteTrackerContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateInviteTracker('enabled', this.checked)"></div>
-                <div class="setting-row"><span>Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateInviteTracker('channelId', this.value)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('invitetracker')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function updateInviteTracker(field, value) {
-    try { await fetch(`${API_BASE}/invitetracker/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchInviteTracker(); } catch (e) { alert('Error'); }
-}
-
-// ==================== LEVELS ====================
-async function fetchLevels() {
-    try {
-        const res = await fetch(`${API_BASE}/levels`);
-        const data = await res.json();
-        const btn = document.getElementById('levelsBtn');
-        const status = document.getElementById('levelsStatus');
-        if (btn) btn.innerText = data.enabled ? 'Disable' : 'Enable';
-        if (status) status.innerText = data.enabled ? '✅ Enabled' : '❌ Disabled';
-        renderLevels(data);
-    } catch (e) { console.error(e); }
-}
-
-function renderLevels(data) {
-    const container = document.getElementById('levelsContent');
-    if (!container) return;
-    let rolesHtml = '';
-    const roles = data.roles || {};
-    Object.keys(roles).forEach(level => {
-        rolesHtml += `<div style="display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;"><span>Level ${level}: ${roles[level]}</span><button class="btn btn-remove" onclick="removeLevelRole('${level}')">✕</button></div>`;
-    });
-    container.innerHTML = `
-        <div class="item-box">
-            <div class="setting-row"><span>XP Per Message (min):</span><input type="number" value="${data.xpPerMessage?.min || 15}" style="width:80px;" onchange="updateLevels('xpPerMessage.min', this.value)"></div>
-            <div class="setting-row"><span>XP Per Message (max):</span><input type="number" value="${data.xpPerMessage?.max || 25}" style="width:80px;" onchange="updateLevels('xpPerMessage.max', this.value)"></div>
-            <div class="setting-row"><span>Cooldown (ms):</span><input type="number" value="${data.cooldown || 60000}" style="width:100px;" onchange="updateLevels('cooldown', this.value)"></div>
-            <div class="setting-row"><span>Level Up Channel:</span><input type="text" value="${data.levelUpChannel || ''}" placeholder="Channel ID" onchange="updateLevels('levelUpChannel', this.value)"></div>
-            <div class="setting-row"><span>Level Up Message:</span><textarea style="width:100%; height:80px; padding:5px; border-radius:5px; border:1px solid #334155; background:#1e293b; color:#fff;" onchange="updateLevels('levelUpMessage', this.value)">${data.levelUpMessage || ''}</textarea></div>
-            <div class="setting-row"><span>Level Up Embed:</span><input type="checkbox" ${data.levelUpEmbed ? 'checked' : ''} onchange="updateLevels('levelUpEmbed', this.checked)"></div>
-            <div class="setting-row"><span>Level Up Color:</span><input type="color" value="${data.levelUpColor || '#57F287'}" onchange="updateLevels('levelUpColor', this.value)"></div>
-            <div class="setting-row"><span>Announce in DM:</span><input type="checkbox" ${data.announceInDM ? 'checked' : ''} onchange="updateLevels('announceInDM', this.checked)"></div>
-        </div>
-        <div class="item-box">
-            <h4>Level Roles</h4>
-            <div class="input-row">
-                <input type="number" id="level-input" placeholder="Level" style="width:80px;">
-                <input type="text" id="role-input" placeholder="Role ID">
-                <button class="btn btn-add" onclick="addLevelRole()">Add</button>
-            </div>
-            <div style="margin-top:10px;">${rolesHtml || '<p style="color:#94a3b8;">No level roles added.</p>'}</div>
-        </div>
-        <div style="margin-top: 20px; text-align: left;">
-            <button class="btn btn-save" onclick="saveSection('levels')">💾 پاشەکەوتکردن</button>
-        </div>
-    `;
-}
-
-async function toggleLevels() {
-    try { await fetch(`${API_BASE}/levels/toggle`, { method: 'POST' }); await fetchLevels(); } catch (e) { alert('Error'); }
-}
-
-async function updateLevels(field, value) {
-    try { await fetch(`${API_BASE}/levels/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchLevels(); } catch (e) { alert('Error'); }
-}
-
+// ================= LEVELS ACTIONS =================
 async function addLevelRole() {
-    const level = document.getElementById('level-input').value.trim();
-    const roleId = document.getElementById('role-input').value.trim();
-    if (!level || !roleId) return;
-    try { await fetch(`${API_BASE}/levels/add-role`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level, roleId }) }); await fetchLevels(); } catch (e) { alert('Error'); }
+    const levelInput = document.getElementById('level-input');
+    const roleInput = document.getElementById('role-input');
+
+    if (!levelInput || !roleInput) return;
+
+    const level = Number(levelInput.value);
+    const roleId = roleInput.value.trim();
+
+    if (!level || level < 1) return showToast('Enter a level', 'warning');
+    if (!roleId) return showToast('Enter a Role ID', 'warning');
+
+    const result = await API.post('/levels/add-role', { level, roleId });
+
+    if (result && result.success) {
+        showToast('Level reward added!', 'success');
+        levelInput.value = '';
+        roleInput.value = '';
+        loadSection('levels');
+    } else {
+        showToast('Failed to add', 'error');
+    }
 }
 
 async function removeLevelRole(level) {
-    try { await fetch(`${API_BASE}/levels/remove-role`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level }) }); await fetchLevels(); } catch (e) { alert('Error'); }
+    if (!confirm('Are you sure you want to remove this reward?')) return;
+
+    const result = await API.post('/levels/remove-role', { level });
+
+    if (result && result.success) {
+        showToast('Removed!', 'success');
+        loadSection('levels');
+    } else {
+        showToast('Failed to remove', 'error');
+    }
 }
 
-// ==================== TICKETS ====================
-async function fetchTickets() {
-    try {
-        const res = await fetch(`${API_BASE}/tickets`);
-        const data = await res.json();
-        const container = document.getElementById('ticketsContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateTickets('enabled', this.checked)"></div>
-                <div class="setting-row"><span>Category ID:</span><input type="text" value="${data.categoryId || ''}" placeholder="Category ID" onchange="updateTickets('categoryId', this.value)"></div>
-                <div class="setting-row"><span>Support Role ID:</span><input type="text" value="${data.supportRoleId || ''}" placeholder="Role ID" onchange="updateTickets('supportRoleId', this.value)"></div>
-                <div class="setting-row"><span>Log Channel ID:</span><input type="text" value="${data.logChannelId || ''}" placeholder="Channel ID" onchange="updateTickets('logChannelId', this.value)"></div>
-                <div class="setting-row"><span>Max Tickets:</span><input type="number" value="${data.maxTickets || 3}" onchange="updateTickets('maxTickets', this.value)"></div>
-                <div class="setting-row"><span>Transcripts:</span><input type="checkbox" ${data.transcripts ? 'checked' : ''} onchange="updateTickets('transcripts', this.checked)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('tickets')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
+// ================= REACTION ROLES ACTIONS =================
+async function addReactionRole() {
+    const messageId = document.getElementById('rr-messageId')?.value.trim();
+    const emoji = document.getElementById('rr-emoji')?.value.trim();
+    const roleId = document.getElementById('rr-roleId')?.value.trim();
+    const channelId = document.getElementById('rr-channelId')?.value.trim();
 
-async function updateTickets(field, value) {
-    try { await fetch(`${API_BASE}/tickets/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchTickets(); } catch (e) { alert('Error'); }
-}
+    if (!messageId || !emoji || !roleId || !channelId) {
+        return showToast('Fill all fields', 'warning');
+    }
 
-// ==================== GIVEAWAYS ====================
-async function fetchGiveaways() {
-    try {
-        const res = await fetch(`${API_BASE}/giveaways`);
-        const data = await res.json();
-        const container = document.getElementById('giveawaysContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateGiveaways('enabled', this.checked)"></div>
-                <div class="setting-row"><span>Default Duration (ms):</span><input type="number" value="${data.defaultDuration || 86400000}" onchange="updateGiveaways('defaultDuration', this.value)"></div>
-                <div class="setting-row"><span>Default Winners:</span><input type="number" value="${data.defaultWinners || 1}" onchange="updateGiveaways('defaultWinners', this.value)"></div>
-                <div class="setting-row"><span>Required Role ID:</span><input type="text" value="${data.requiredRoleId || ''}" placeholder="Role ID" onchange="updateGiveaways('requiredRoleId', this.value)"></div>
-                <div class="setting-row"><span>Required Level:</span><input type="number" value="${data.requiredLevel || 0}" onchange="updateGiveaways('requiredLevel', this.value)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('giveaways')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function updateGiveaways(field, value) {
-    try { await fetch(`${API_BASE}/giveaways/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchGiveaways(); } catch (e) { alert('Error'); }
-}
-
-// ==================== WARNS ====================
-async function fetchWarns() {
-    try {
-        const res = await fetch(`${API_BASE}/warns`);
-        const data = await res.json();
-        const container = document.getElementById('warnsContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateWarns('enabled', this.checked)"></div>
-                <div class="setting-row"><span>Auto Punish:</span><input type="checkbox" ${data.autoPunish ? 'checked' : ''} onchange="updateWarns('autoPunish', this.checked)"></div>
-                <div class="setting-row"><span>Max Warns:</span><input type="number" value="${data.maxWarns || 3}" onchange="updateWarns('maxWarns', this.value)"></div>
-                <div class="setting-row"><span>Punishment:</span><select onchange="updateWarns('punishment', this.value)">
-                    <option value="timeout" ${data.punishment === 'timeout' ? 'selected' : ''}>Timeout</option>
-                    <option value="kick" ${data.punishment === 'kick' ? 'selected' : ''}>Kick</option>
-                    <option value="ban" ${data.punishment === 'ban' ? 'selected' : ''}>Ban</option>
-                </select></div>
-                <div class="setting-row"><span>Log Channel ID:</span><input type="text" value="${data.logChannelId || ''}" placeholder="Channel ID" onchange="updateWarns('logChannelId', this.value)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('warns')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function updateWarns(field, value) {
-    try { await fetch(`${API_BASE}/warns/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchWarns(); } catch (e) { alert('Error'); }
-}
-
-// ==================== GAMES ====================
-async function fetchGames() {
-    try {
-        const res = await fetch(`${API_BASE}/games`);
-        const data = await res.json();
-        renderGames(data);
-    } catch (e) { console.error(e); }
-}
-
-function renderGames(data) {
-    const container = document.getElementById('gamesContent');
-    if (!container) return;
-    container.innerHTML = `
-        <div class="item-box">
-            <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateGames('enabled', this.checked)"></div>
-            <div class="setting-row"><span>Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateGames('channelId', this.value)"></div>
-            <div class="setting-row"><span>Trivia:</span><input type="checkbox" ${data.trivia ? 'checked' : ''} onchange="updateGames('trivia', this.checked)"></div>
-            <div class="setting-row"><span>Wordle:</span><input type="checkbox" ${data.wordle ? 'checked' : ''} onchange="updateGames('wordle', this.checked)"></div>
-            <div class="setting-row"><span>Truth or Dare:</span><input type="checkbox" ${data.truthordare ? 'checked' : ''} onchange="updateGames('truthordare', this.checked)"></div>
-            <div class="setting-row"><span>Would You Rather:</span><input type="checkbox" ${data.wouldyourather ? 'checked' : ''} onchange="updateGames('wouldyourather', this.checked)"></div>
-            <div class="setting-row"><span>Points Per Win:</span><input type="number" value="${data.pointsPerWin || 10}" onchange="updateGames('pointsPerWin', this.value)"></div>
-            <div class="setting-row"><span>Show Correct Answer:</span><input type="checkbox" ${data.showCorrectAnswer ? 'checked' : ''} onchange="updateGames('showCorrectAnswer', this.checked)"></div>
-            <div class="setting-row"><span>Show Wrong Answer:</span><input type="checkbox" ${data.showWrongAnswer ? 'checked' : ''} onchange="updateGames('showWrongAnswer', this.checked)"></div>
-        </div>
-        <div style="margin-top: 20px; text-align: left;">
-            <button class="btn btn-save" onclick="saveSection('games')">💾 پاشەکەوتکردن</button>
-        </div>
-    `;
-}
-
-async function updateGames(field, value) {
-    try { await fetch(`${API_BASE}/games/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchGames(); } catch (e) { alert('Error'); }
-}
-
-// ==================== ANNOUNCEMENTS ====================
-async function fetchAnnouncements() {
-    try {
-        const res = await fetch(`${API_BASE}/announcements`);
-        const data = await res.json();
-        const container = document.getElementById('announcementsContent');
-        if (!container) return;
-        container.innerHTML = `
-            <div class="item-box">
-                <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateAnnouncements('enabled', this.checked)"></div>
-                <div class="setting-row"><span>Default Channel ID:</span><input type="text" value="${data.defaultChannel || ''}" placeholder="Channel ID" onchange="updateAnnouncements('defaultChannel', this.value)"></div>
-                <div class="setting-row"><span>Mention Everyone:</span><input type="checkbox" ${data.mentionEveryone ? 'checked' : ''} onchange="updateAnnouncements('mentionEveryone', this.checked)"></div>
-                <div class="setting-row"><span>Use Embed:</span><input type="checkbox" ${data.embed ? 'checked' : ''} onchange="updateAnnouncements('embed', this.checked)"></div>
-                <div class="setting-row"><span>Color:</span><input type="color" value="${data.color || '#5865F2'}" onchange="updateAnnouncements('color', this.value)"></div>
-            </div>
-            <div style="margin-top: 20px; text-align: left;">
-                <button class="btn btn-save" onclick="saveSection('announcements')">💾 پاشەکەوتکردن</button>
-            </div>
-        `;
-    } catch (e) { console.error(e); }
-}
-
-async function updateAnnouncements(field, value) {
-    try { await fetch(`${API_BASE}/announcements/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchAnnouncements(); } catch (e) { alert('Error'); }
-}
-
-// ==================== COLOR ROLES ====================
-async function fetchColorRoles() {
-    try {
-        const res = await fetch(`${API_BASE}/colorroles`);
-        const data = await res.json();
-        renderColorRoles(data);
-    } catch (e) { console.error(e); }
-}
-
-function renderColorRoles(data) {
-    const container = document.getElementById('colorRolesContent');
-    if (!container) return;
-    let rolesHtml = '';
-    const roles = data.roles || {};
-    Object.keys(roles).forEach(colorName => {
-        rolesHtml += `
-            <div class="item-list" style="display:flex; justify-content:space-between; align-items:center; background:#334155; padding:8px; border-radius:5px; margin-bottom:5px;">
-                <span>${colorName} + ${roles[colorName]}</span>
-                <button class="btn btn-remove" onclick="removeColorRole('${colorName}')">✕</button>
-            </div>
-        `;
+    const result = await API.post('/reactionroles/add', {
+        messageId, emoji, roleId, channelId
     });
-    container.innerHTML = `
-        <div class="item-box">
-            <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${data.enabled ? 'checked' : ''} onchange="updateColorRoles('enabled', this.checked)"></div>
-            <div class="setting-row"><span>Channel ID:</span><input type="text" value="${data.channelId || ''}" placeholder="Channel ID" onchange="updateColorRoles('channelId', this.value)"></div>
-            <div class="setting-row"><span>Max Roles:</span><input type="number" value="${data.maxRoles || 1}" onchange="updateColorRoles('maxRoles', this.value)"></div>
-            <div class="setting-row"><span>Allow Multiple:</span><input type="checkbox" ${data.allowMultiple ? 'checked' : ''} onchange="updateColorRoles('allowMultiple', this.checked)"></div>
-        </div>
-        <div class="item-box">
-            <h4>Color Roles</h4>
-            <div class="input-row">
-                <input type="text" id="color-name" placeholder="Color Name">
-                <input type="text" id="color-role-id" placeholder="Role ID">
-                <button class="btn btn-add" onclick="addColorRole()">Add</button>
-            </div>
-            <div style="margin-top:10px;">${rolesHtml || '<p style="color:#94a3b8;">No color roles added.</p>'}</div>
-        </div>
-        <div style="margin-top: 20px; text-align: left;">
-            <button class="btn btn-save" onclick="saveSection('colorroles')">💾 پاشەکەوتکردن</button>
-        </div>
-    `;
+
+    if (result && result.success) {
+        showToast('Reaction role added!', 'success');
+        loadSection('reactionroles');
+    } else {
+        showToast('Failed to add', 'error');
+    }
 }
 
-async function updateColorRoles(field, value) {
-    try { await fetch(`${API_BASE}/colorroles/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ field, value }) }); await fetchColorRoles(); } catch (e) { alert('Error'); }
+async function removeReactionRole(index) {
+    if (!confirm('Are you sure you want to remove this role?')) return;
+
+    const result = await API.post('/reactionroles/remove', { index });
+
+    if (result && result.success) {
+        showToast('Removed!', 'success');
+        loadSection('reactionroles');
+    } else {
+        showToast('Failed to remove', 'error');
+    }
 }
 
-async function addColorRole() {
-    const colorName = document.getElementById('color-name').value.trim();
-    const roleId = document.getElementById('color-role-id').value.trim();
-    if (!colorName || !roleId) return;
-    try { await fetch(`${API_BASE}/colorroles/add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ colorName, roleId }) }); await fetchColorRoles(); } catch (e) { alert('Error'); }
+// ================= SET LOG CHANNEL =================
+async function setLogChannel(type) {
+    const input = document.getElementById(`log-${type}`);
+    if (!input) return;
+
+    const channelId = input.value.trim();
+
+    const result = await API.post('/logs/set-channel', { type, channelId });
+
+    if (result && result.success) {
+        showToast('Log channel set!', 'success');
+    } else {
+        showToast('Failed to set', 'error');
+    }
 }
 
-async function removeColorRole(colorName) {
-    try { await fetch(`${API_BASE}/colorroles/remove`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ colorName }) }); await fetchColorRoles(); } catch (e) { alert('Error'); }
+// ================= SEARCH =================
+function setupSearch() {
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            state.searchTerm = e.target.value.toLowerCase().trim();
+            filterContent();
+        }, CONFIG.SEARCH_DEBOUNCE);
+    });
 }
 
-// ==================== UTILITY ====================
-async function fetchUtility() {
-    try {
-        const res = await fetch(`${API_BASE}/utility`);
-        const data = await res.json();
-        renderUtility(data);
-    } catch (e) { console.error(e); }
-}
+function filterContent() {
+    const searchTerm = state.searchTerm;
+    const rows = document.querySelectorAll('.setting-row');
+    const boxes = document.querySelectorAll('.item-box');
 
-function renderUtility(data) {
-    const container = document.getElementById('utilityContent');
-    if (!container) return;
-    container.innerHTML = '';
-    const commands = Object.keys(data);
-    if (commands.length === 0) {
-        container.innerHTML = '<p style="color:#94a3b8;">No utility commands found.</p>';
+    if (!searchTerm) {
+        rows.forEach(row => row.style.display = 'flex');
+        boxes.forEach(box => box.style.display = 'block');
         return;
     }
-    commands.forEach(command => {
-        const settings = data[command];
-        const box = document.createElement('div');
-        box.className = 'item-box';
-        box.style.marginBottom = '15px';
-        let fieldsHtml = `
-            <div class="setting-row"><span>Command:</span><strong style="color:#fbbf24;">/${command}</strong></div>
-            <div class="setting-row"><span>Enabled:</span><input type="checkbox" ${settings.enabled ? 'checked' : ''} onchange="updateUtility('${command}', 'enabled', this.checked)"></div>
-            <div class="setting-row"><span>Channels:</span><input type="text" value="${(settings.channels || []).join(',')}" placeholder="Channel IDs (comma separated)" onchange="updateUtility('${command}', 'channels', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Disabled Channels:</span><input type="text" value="${(settings.disabledChannels || []).join(',')}" placeholder="Channel IDs (comma separated)" onchange="updateUtility('${command}', 'disabledChannels', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Roles:</span><input type="text" value="${(settings.roles || []).join(',')}" placeholder="Role IDs (comma separated)" onchange="updateUtility('${command}', 'roles', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Disabled Roles:</span><input type="text" value="${(settings.disabledRoles || []).join(',')}" placeholder="Role IDs (comma separated)" onchange="updateUtility('${command}', 'disabledRoles', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Users:</span><input type="text" value="${(settings.users || []).join(',')}" placeholder="User IDs (comma separated)" onchange="updateUtility('${command}', 'users', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Disabled Users:</span><input type="text" value="${(settings.disabledUsers || []).join(',')}" placeholder="User IDs (comma separated)" onchange="updateUtility('${command}', 'disabledUsers', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Max Limit:</span><input type="number" value="${settings.maxLimit || 4}" style="width:80px;" onchange="updateUtility('${command}', 'maxLimit', parseInt(this.value))"></div>
-            <div class="setting-row"><span>Limit Window (ms):</span><input type="number" value="${settings.limitWindow || 600000}" style="width:100px;" onchange="updateUtility('${command}', 'limitWindow', parseInt(this.value))"></div>
-            <div class="setting-row"><span>Custom Name:</span><input type="text" value="${settings.customName || ''}" placeholder="e.g. p, c, s" onchange="updateUtility('${command}', 'customName', this.value)"></div>
-            <div class="setting-row"><span>Aliases:</span><input type="text" value="${(settings.aliases || []).join(',')}" placeholder="Aliases (comma separated)" onchange="updateUtility('${command}', 'aliases', this.value.split(',').map(x => x.trim()).filter(x => x))"></div>
-            <div class="setting-row"><span>Auto-Delete Message:</span><input type="checkbox" ${settings.autoDeleteMessage ? 'checked' : ''} onchange="updateUtility('${command}', 'autoDeleteMessage', this.checked)"></div>
-            <div class="setting-row"><span>Auto-Delete Invocation:</span><input type="checkbox" ${settings.autoDeleteInvocation ? 'checked' : ''} onchange="updateUtility('${command}', 'autoDeleteInvocation', this.checked)"></div>
-            <div class="setting-row"><span>Auto-Delete Reply:</span><input type="checkbox" ${settings.autoDeleteReply ? 'checked' : ''} onchange="updateUtility('${command}', 'autoDeleteReply', this.checked)"></div>
-        `;
-        box.innerHTML = `<h4>/${command.toUpperCase()}</h4>${fieldsHtml}`;
-        container.appendChild(box);
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            row.style.display = 'flex';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    boxes.forEach(box => {
+        const visibleRows = box.querySelectorAll('.setting-row');
+        const hasVisible = Array.from(visibleRows).some(r => r.style.display !== 'none');
+        box.style.display = hasVisible ? 'block' : 'none';
     });
 }
 
-async function updateUtility(command, field, value) {
-    try { await fetch(`${API_BASE}/utility/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command, field, value }) }); await fetchUtility(); } catch (e) { alert('Error'); }
+// ================= FILTERS =================
+function setupFilters() {
+    const filterBtns = document.querySelectorAll('[data-filter]');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const filter = btn.dataset.filter;
+            state.filter = filter;
+
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            applyFilter(filter);
+        });
+    });
 }
 
-// ==================== SAVE SECTION ====================
-async function saveSection(section) {
-    try {
-        const container = document.getElementById(`${section}Content`);
-        if (!container) return;
-        const inputs = container.querySelectorAll('input, select, textarea');
-        const data = {};
-        inputs.forEach(input => {
-            const field = input.getAttribute('data-field') || input.id || input.name;
-            if (field) {
-                if (input.type === 'checkbox') {
-                    data[field] = input.checked;
-                } else {
-                    data[field] = input.value;
-                }
+function applyFilter(filter) {
+    const rows = document.querySelectorAll('.setting-row');
+
+    if (filter === 'all') {
+        rows.forEach(row => row.style.display = 'flex');
+        return;
+    }
+
+    rows.forEach(row => {
+        const input = row.querySelector('input, select');
+        if (!input) return;
+
+        if (filter === 'enabled') {
+            if (input.type === 'checkbox' && input.checked) {
+                row.style.display = 'flex';
+            } else {
+                row.style.display = 'none';
             }
-        });
-        const res = await fetch(`${API_BASE}/${section}/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (res.ok) {
-            alert('✅ بە سەرکەوتوویی پاشەکەوت کرا!');
-        } else {
-            alert('❌ هەڵەیەک ڕوویدا لە کاتی پاشەکەوتکردن.');
+        } else if (filter === 'disabled') {
+            if (input.type === 'checkbox' && !input.checked) {
+                row.style.display = 'flex';
+            } else {
+                row.style.display = 'none';
+            }
         }
-    } catch (e) {
-        console.error(e);
-        alert('❌ هەڵەیەک ڕوویدا.');
+    });
+}
+
+// ================= EXPORT/IMPORT =================
+async function exportConfig() {
+    try {
+        const data = await API.get('/config');
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `security-bot-config-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Exported!', 'success');
+    } catch (error) {
+        showToast('Export failed', 'error');
     }
 }
 
-// ==================== NAVIGATION ====================
-function showSection(id) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
-    const section = document.getElementById(id);
-    if (section) section.classList.add('active');
-    if (event && event.target) event.target.classList.add('active');
-    const title = document.getElementById('pageTitle');
-    if (title) title.innerText = id.charAt(0).toUpperCase() + id.slice(1);
+async function importConfig() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+
+            const result = await API.post('/config/import', { config: data });
+
+            if (result && result.success) {
+                showToast('Imported!', 'success');
+                loadSection(state.currentSection);
+            } else {
+                showToast('Import failed', 'error');
+            }
+        } catch (error) {
+            showToast('Invalid file', 'error');
+        }
+    };
+    input.click();
 }
 
-// ==================== INIT ====================
-async function init() {
-    await fetchConfig();
-    await fetchStatus();
-    await fetchGeneral();
-    await fetchAnalytics();
-    await fetchWhitelist();
-    await fetchAntiSpam();
-    await fetchAntiNuke();
-    await fetchBeastMode();
-    await fetchAntiRaid();
-    await fetchVerification();
-    await fetchModeration();
-    await fetchAutoRole();
-    await fetchLogs();
-    await fetchWelcome();
-    await fetchGoodbye();
-    await fetchReactionRoles();
-    await fetchInviteTracker();
-    await fetchLevels();
-    await fetchRoleLimits();
-    await fetchTickets();
-    await fetchGiveaways();
-    await fetchWarns();
-    await fetchGames();
-    await fetchAnnouncements();
-    await fetchColorRoles();
-    await fetchUtility();
-    setInterval(fetchStatus, 10000);
+// ================= RESET SECTION =================
+async function resetSection() {
+    if (!confirm('Reset this section to default?')) return;
+
+    const section = state.currentSection;
+
+    try {
+        const result = await API.post(`/${section}/reset`);
+
+        if (result && result.success) {
+            showToast('Section reset', 'success');
+            loadSection(section);
+        } else {
+            showToast('Reset failed', 'error');
+        }
+    } catch (error) {
+        showToast('Error', 'error');
+    }
 }
 
-init();
+// ================= THEME TOGGLE =================
+function toggleTheme() {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', state.theme);
+    localStorage.setItem('dashboard-theme', state.theme);
+    showToast(`Theme: ${state.theme}`, 'info');
+}
+
+// ================= SIDEBAR TOGGLE =================
+function toggleSidebar() {
+    state.sidebarCollapsed = !state.sidebarCollapsed;
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('collapsed', state.sidebarCollapsed);
+    }
+}
+
+// ================= KEYBOARD SHORTCUTS =================
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveCurrentSection();
+        }
+
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            const search = document.getElementById('searchInput');
+            if (search) search.focus();
+        }
+
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            exportConfig();
+        }
+
+        if (e.ctrlKey && e.key === 'i') {
+            e.preventDefault();
+            importConfig();
+        }
+
+        if (e.ctrlKey && e.key === 'r') {
+            e.preventDefault();
+            refreshSection();
+        }
+
+        if (e.key === 'Escape') {
+            const search = document.getElementById('searchInput');
+            if (search) {
+                search.value = '';
+                state.searchTerm = '';
+                filterContent();
+            }
+            document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+        }
+    });
+}
+
+// ================= REFRESH =================
+function refreshSection() {
+    showToast('Refreshing...', 'info');
+    loadSection(state.currentSection);
+}
+
+// ================= STATUS UPDATE =================
+async function updateStatus() {
+    try {
+        const status = await API.get('/status');
+        const text = document.getElementById('statusText');
+        const dot = document.querySelector('.status-dot');
+        const statusBadge = document.getElementById('statusBadge');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const footerPing = document.getElementById('footerPing');
+
+        if (status && status.online) {
+            if (text) text.textContent = 'Online';
+            if (dot) dot.style.background = 'var(--success)';
+            if (statusBadge) {
+                statusBadge.classList.remove('offline');
+                statusBadge.classList.add('online');
+            }
+            if (connectionStatus) {
+                connectionStatus.innerHTML = '<span class="status-indicator online"></span><span>Connected</span>';
+            }
+            if (footerPing) {
+                footerPing.textContent = `Ping: ${status.ping}ms`;
+            }
+        } else {
+            if (text) text.textContent = 'Offline';
+            if (dot) dot.style.background = 'var(--danger)';
+            if (statusBadge) {
+                statusBadge.classList.remove('online');
+                statusBadge.classList.add('offline');
+            }
+            if (connectionStatus) {
+                connectionStatus.innerHTML = '<span class="status-indicator offline"></span><span>Disconnected</span>';
+            }
+            if (footerPing) {
+                footerPing.textContent = 'Ping: --ms';
+            }
+        }
+    } catch (error) {
+        console.error('Status Error:', error);
+    }
+}
+
+// ================= PREVIEWS =================
+function updateWelcomePreview() {
+    const preview = document.getElementById('welcomePreview');
+    if (!preview) return;
+
+    const messageInput = document.querySelector('[data-config-path="welcome.message"]');
+    const colorInput = document.querySelector('[data-config-path="welcome.color"]');
+    const embedInput = document.querySelector('[data-config-path="welcome.embed"]');
+
+    if (!messageInput) return;
+
+    const message = messageInput.value || 'Welcome {userMention} to the server!';
+    const color = colorInput?.value || '#5865F2';
+    const useEmbed = embedInput?.checked || false;
+
+    const replacedMessage = message
+        .replace(/{userMention}/g, '@User')
+        .replace(/{user}/g, 'User#0000')
+        .replace(/{userName}/g, 'User')
+        .replace(/{userId}/g, '123456789')
+        .replace(/{server}/g, 'Server Name')
+        .replace(/{serverName}/g, 'Server Name')
+        .replace(/{memberCount}/g, '100');
+
+    if (useEmbed) {
+        preview.innerHTML = `<div style="border-right:4px solid ${color};background:var(--bg-secondary);padding:16px;border-radius:8px;">
+            <p style="color:var(--text-primary);font-size:14px;margin:0;">${escapeHtml(replacedMessage)}</p>
+        </div>`;
+    } else {
+        preview.innerHTML = `<p style="color:var(--text-primary);font-size:14px;margin:0;">${escapeHtml(replacedMessage)}</p>`;
+    }
+}
+
+function updateGoodbyePreview() {
+    const preview = document.getElementById('goodbyePreview');
+    if (!preview) return;
+
+    const messageInput = document.querySelector('[data-config-path="goodbye.message"]');
+    const colorInput = document.querySelector('[data-config-path="goodbye.color"]');
+    const embedInput = document.querySelector('[data-config-path="goodbye.embed"]');
+
+    if (!messageInput) return;
+
+    const message = messageInput.value || 'Goodbye {userMention}!';
+    const color = colorInput?.value || '#ED4245';
+    const useEmbed = embedInput?.checked || false;
+
+    const replacedMessage = message
+        .replace(/{userMention}/g, '@User')
+        .replace(/{user}/g, 'User#0000')
+        .replace(/{userName}/g, 'User')
+        .replace(/{userId}/g, '123456789')
+        .replace(/{server}/g, 'Server Name')
+        .replace(/{serverName}/g, 'Server Name')
+        .replace(/{memberCount}/g, '100');
+
+    if (useEmbed) {
+        preview.innerHTML = `<div style="border-right:4px solid ${color};background:var(--bg-secondary);padding:16px;border-radius:8px;">
+            <p style="color:var(--text-primary);font-size:14px;margin:0;">${escapeHtml(replacedMessage)}</p>
+        </div>`;
+    } else {
+        preview.innerHTML = `<p style="color:var(--text-primary);font-size:14px;margin:0;">${escapeHtml(replacedMessage)}</p>`;
+    }
+}
+
+function setupPreviews() {
+    const welcomeInputs = document.querySelectorAll('[data-config-path^="welcome."]');
+    welcomeInputs.forEach(input => {
+        input.addEventListener('input', updateWelcomePreview);
+        input.addEventListener('change', updateWelcomePreview);
+    });
+
+    const goodbyeInputs = document.querySelectorAll('[data-config-path^="goodbye."]');
+    goodbyeInputs.forEach(input => {
+        input.addEventListener('input', updateGoodbyePreview);
+        input.addEventListener('change', updateGoodbyePreview);
+    });
+}
+
+// ================= THEME =================
+function loadTheme() {
+    const savedTheme = localStorage.getItem('dashboard-theme') || 'dark';
+    state.theme = savedTheme;
+    document.body.setAttribute('data-theme', savedTheme);
+}
+
+// ================= HASH ROUTING =================
+function handleHashChange() {
+    const hash = window.location.hash.substring(1);
+    if (hash && SECTION_TITLES[hash]) {
+        loadSection(hash);
+        document.querySelectorAll('.nav-item').forEach(i => {
+            i.classList.toggle('active', i.dataset.section === hash);
+        });
+    }
+}
+
+// ================= NETWORK MONITOR =================
+function setupNetworkMonitor() {
+    window.addEventListener('online', () => {
+        showToast('Connection restored', 'success');
+        updateStatus();
+    });
+
+    window.addEventListener('offline', () => {
+        showToast('Connection lost', 'error');
+    });
+}
+
+// ================= TOOLBAR =================
+function setupToolbar() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', refreshSection);
+
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) exportBtn.addEventListener('click', exportConfig);
+
+    const importBtn = document.getElementById('importBtn');
+    if (importBtn) importBtn.addEventListener('click', importConfig);
+
+    const themeBtn = document.getElementById('themeBtn');
+    if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+
+    const shortcutsBtn = document.getElementById('shortcutsBtn');
+    if (shortcutsBtn) shortcutsBtn.addEventListener('click', showShortcuts);
+
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
+}
+
+// ================= SHORTCUTS MODAL =================
+function showShortcuts() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal" style="max-width:600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcut-list">
+                    <div class="shortcut-item">
+                        <span class="shortcut-keys"><kbd>CTRL</kbd> + <kbd>S</kbd></span>
+                        <span class="shortcut-desc">Save changes</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-keys"><kbd>CTRL</kbd> + <kbd>K</kbd></span>
+                        <span class="shortcut-desc">Search settings</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-keys"><kbd>CTRL</kbd> + <kbd>E</kbd></span>
+                        <span class="shortcut-desc">Export config</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-keys"><kbd>CTRL</kbd> + <kbd>I</kbd></span>
+                        <span class="shortcut-desc">Import config</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-keys"><kbd>CTRL</kbd> + <kbd>R</kbd></span>
+                        <span class="shortcut-desc">Refresh section</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-keys"><kbd>ESC</kbd></span>
+                        <span class="shortcut-desc">Close search or modal</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary modal-close-btn">Close</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('.modal-close').onclick = () => modal.remove();
+    modal.querySelector('.modal-close-btn').onclick = () => modal.remove();
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+
+// ================= INITIALIZATION =================
+document.addEventListener('DOMContentLoaded', () => {
+    console.log(`Security Bot Dashboard v${CONFIG.VERSION} initialized`);
+
+    loadTheme();
+    setupNavigation();
+    setupToolbar();
+    setupSearch();
+    setupFilters();
+    setupKeyboardShortcuts();
+    setupNetworkMonitor();
+
+    const saveBtn = document.getElementById('saveBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveCurrentSection);
+    }
+
+    startAutoSave();
+
+    handleHashChange();
+    if (!window.location.hash) {
+        loadSection('general');
+    }
+
+    updateStatus();
+    setInterval(updateStatus, 5000);
+
+    setTimeout(detectChanges, 1000);
+    setTimeout(setupPreviews, 500);
+
+    window.addEventListener('hashchange', handleHashChange);
+});
+
+// ================= ERROR HANDLING =================
+window.addEventListener('error', (e) => {
+    console.error('Global Error:', e.error);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unhandled Promise Rejection:', e.reason);
+});
+
+// ================= GLOBAL EXPORT =================
+window.Dashboard = {
+    state,
+    API,
+    showToast,
+    loadSection,
+    saveCurrentSection,
+    addTrigger,
+    removeTrigger,
+    addAutoRole,
+    removeAutoRole,
+    addLevelRole,
+    removeLevelRole,
+    addReactionRole,
+    removeReactionRole,
+    setLogChannel,
+    exportConfig,
+    importConfig,
+    resetSection,
+    refreshSection,
+    toggleTheme,
+    toggleSidebar,
+    showShortcuts,
+    updateStatus
+};
