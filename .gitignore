@@ -1,35 +1,41 @@
-<<<<<<< HEAD
-# Environment variables (نهێنی)
+# ================= Environment (نهێنی) =================
 .env
+*.env
+.env.local
+.env.production
 
-# Node modules
+# ================= Node modules =================
 node_modules/
+.npm/
 
-# Logs
+# ================= Logs =================
 *.log
-npm-debug.log*
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-
-# Build
-dist/
-build/
-=======
-node_modules/
+logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.env
-*.env
+
+# ================= OS files =================
 .DS_Store
 Thumbs.db
-*.log
-logs/
-.npm/
->>>>>>> origin/main
+
+# ================= IDE =================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ================= Build =================
+dist/
+build/
+
+# ================= Data =================
+data/levels.json
+
+# ================= Dashboard (کۆپییەکانی زیادە) =================
+dashboard/config.js
+dashboard/script.js
+
+# ================= Typo Files =================
+*.jsm
+models.js‌
