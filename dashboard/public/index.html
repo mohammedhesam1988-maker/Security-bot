@@ -1,265 +1,29 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ckb">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Bot - Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security Bot Dashboard</title>
+<link rel="stylesheet" href="/css/style.css">
 </head>
-<body data-theme="dark">
-
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loadingScreen">
-        <div class="loading-content">
-            <i class="fas fa-shield-halved"></i>
-            <h1>Security Bot</h1>
-            <div class="loading-spinner"></div>
-            <p>Loading Dashboard...</p>
-        </div>
-    </div>
-
-    <!-- Main App -->
-    <div class="app" id="app" style="display:none;">
-
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-shield-halved"></i>
-                    </div>
-                    <div class="logo-text">
-                        <span class="logo-title">Security Bot</span>
-                        <span class="logo-subtitle">Dashboard v7.0</span>
-                    </div>
-                </div>
-                <div class="status-badge" id="statusBadge">
-                    <span class="status-dot"></span>
-                    <span id="statusText">Checking...</span>
-                </div>
-            </div>
-
-            <nav class="sidebar-nav">
-                <a href="#general" class="nav-item active" data-section="general">
-                    <div class="nav-icon"><i class="fas fa-home"></i></div>
-                    <span class="nav-label">General</span>
-                </a>
-                <a href="#analytics" class="nav-item" data-section="analytics">
-                    <div class="nav-icon"><i class="fas fa-chart-line"></i></div>
-                    <span class="nav-label">Analytics</span>
-                </a>
-                <a href="#whitelist" class="nav-item" data-section="whitelist">
-                    <div class="nav-icon"><i class="fas fa-list-check"></i></div>
-                    <span class="nav-label">Whitelist</span>
-                </a>
-
-                <div class="nav-divider"></div>
-                <div class="nav-section-title">Protection</div>
-
-                <a href="#antispam" class="nav-item" data-section="antispam">
-                    <div class="nav-icon"><i class="fas fa-shield-virus"></i></div>
-                    <span class="nav-label">Anti-Spam</span>
-                </a>
-                <a href="#antinuke" class="nav-item" data-section="antinuke">
-                    <div class="nav-icon"><i class="fas fa-bomb"></i></div>
-                    <span class="nav-label">Anti-Nuke</span>
-                </a>
-                <a href="#beastmode" class="nav-item" data-section="beastmode">
-                    <div class="nav-icon"><i class="fas fa-dragon"></i></div>
-                    <span class="nav-label">Beast Mode</span>
-                </a>
-                <a href="#antiraid" class="nav-item" data-section="antiraid">
-                    <div class="nav-icon"><i class="fas fa-users-slash"></i></div>
-                    <span class="nav-label">Anti-Raid</span>
-                </a>
-                <a href="#verification" class="nav-item" data-section="verification">
-                    <div class="nav-icon"><i class="fas fa-user-check"></i></div>
-                    <span class="nav-label">Verification</span>
-                </a>
-
-                <div class="nav-divider"></div>
-                <div class="nav-section-title">Management</div>
-
-                <a href="#moderation" class="nav-item" data-section="moderation">
-                    <div class="nav-icon"><i class="fas fa-gavel"></i></div>
-                    <span class="nav-label">Moderation</span>
-                </a>
-                <a href="#autorole" class="nav-item" data-section="autorole">
-                    <div class="nav-icon"><i class="fas fa-user-tag"></i></div>
-                    <span class="nav-label">Auto Role</span>
-                </a>
-                <a href="#logs" class="nav-item" data-section="logs">
-                    <div class="nav-icon"><i class="fas fa-file-lines"></i></div>
-                    <span class="nav-label">Logs</span>
-                </a>
-                <a href="#levels" class="nav-item" data-section="levels">
-                    <div class="nav-icon"><i class="fas fa-trophy"></i></div>
-                    <span class="nav-label">Levels</span>
-                </a>
-                <a href="#rolelimits" class="nav-item" data-section="rolelimits">
-                    <div class="nav-icon"><i class="fas fa-users-gear"></i></div>
-                    <span class="nav-label">Role Limits</span>
-                </a>
-
-                <div class="nav-divider"></div>
-                <div class="nav-section-title">System</div>
-
-                <a href="#welcome" class="nav-item" data-section="welcome">
-                    <div class="nav-icon"><i class="fas fa-hand-wave"></i></div>
-                    <span class="nav-label">Welcome</span>
-                </a>
-                <a href="#goodbye" class="nav-item" data-section="goodbye">
-                    <div class="nav-icon"><i class="fas fa-hand-peace"></i></div>
-                    <span class="nav-label">Goodbye</span>
-                </a>
-                <a href="#reactionroles" class="nav-item" data-section="reactionroles">
-                    <div class="nav-icon"><i class="fas fa-face-smile"></i></div>
-                    <span class="nav-label">Reaction Roles</span>
-                </a>
-                <a href="#invitetracker" class="nav-item" data-section="invitetracker">
-                    <div class="nav-icon"><i class="fas fa-envelope"></i></div>
-                    <span class="nav-label">Invite Tracker</span>
-                </a>
-                <a href="#tickets" class="nav-item" data-section="tickets">
-                    <div class="nav-icon"><i class="fas fa-ticket"></i></div>
-                    <span class="nav-label">Tickets</span>
-                </a>
-                <a href="#giveaways" class="nav-item" data-section="giveaways">
-                    <div class="nav-icon"><i class="fas fa-gift"></i></div>
-                    <span class="nav-label">Giveaways</span>
-                </a>
-                <a href="#warns" class="nav-item" data-section="warns">
-                    <div class="nav-icon"><i class="fas fa-triangle-exclamation"></i></div>
-                    <span class="nav-label">Warns</span>
-                </a>
-                <a href="#games" class="nav-item" data-section="games">
-                    <div class="nav-icon"><i class="fas fa-gamepad"></i></div>
-                    <span class="nav-label">Games</span>
-                </a>
-                <a href="#announcements" class="nav-item" data-section="announcements">
-                    <div class="nav-icon"><i class="fas fa-bullhorn"></i></div>
-                    <span class="nav-label">Announcements</span>
-                </a>
-                <a href="#colorroles" class="nav-item" data-section="colorroles">
-                    <div class="nav-icon"><i class="fas fa-palette"></i></div>
-                    <span class="nav-label">Color Roles</span>
-                </a>
-
-                <div class="nav-divider"></div>
-                <div class="nav-section-title">Utilities</div>
-
-                <a href="#utility" class="nav-item" data-section="utility">
-                    <div class="nav-icon"><i class="fas fa-wrench"></i></div>
-                    <span class="nav-label">Utility</span>
-                </a>
-                <a href="#triggers" class="nav-item" data-section="triggers">
-                    <div class="nav-icon"><i class="fas fa-bolt"></i></div>
-                    <span class="nav-label">Triggers</span>
-                </a>
-                <a href="#riskscore" class="nav-item" data-section="riskscore">
-                    <div class="nav-icon"><i class="fas fa-chart-simple"></i></div>
-                    <span class="nav-label">Risk Score</span>
-                </a>
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="version-info">
-                    <span class="badge">v7.0.0</span>
-                    <span class="copyright">© 2025</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <header class="topbar">
-                <div class="topbar-left">
-                    <button class="icon-btn" id="sidebarToggle" title="Toggle Sidebar">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <h1 id="pageTitle">General Settings</h1>
-                </div>
-
-                <div class="topbar-center">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="searchInput" placeholder="Search settings...">
-                        <kbd>CTRL + K</kbd>
-                    </div>
-                </div>
-
-                <div class="topbar-actions">
-                    <button class="icon-btn" id="refreshBtn" title="Refresh">
-                        <i class="fas fa-rotate"></i>
-                    </button>
-                    <button class="icon-btn" id="exportBtn" title="Export">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="icon-btn" id="importBtn" title="Import">
-                        <i class="fas fa-upload"></i>
-                    </button>
-                    <button class="icon-btn" id="themeBtn" title="Theme">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                    <button class="icon-btn" id="shortcutsBtn" title="Shortcuts">
-                        <i class="fas fa-keyboard"></i>
-                    </button>
-                    <button class="btn-save" id="saveBtn">
-                        <i class="fas fa-save"></i>
-                        <span>Save</span>
-                    </button>
-                </div>
-            </header>
-
-            <div class="filters-bar">
-                <div class="filters-group">
-                    <button class="filter-btn active" data-filter="all">
-                        <i class="fas fa-list"></i> All
-                    </button>
-                    <button class="filter-btn" data-filter="enabled">
-                        <i class="fas fa-check"></i> Enabled
-                    </button>
-                    <button class="filter-btn" data-filter="disabled">
-                        <i class="fas fa-times"></i> Disabled
-                    </button>
-                </div>
-                <div class="filters-right">
-                    <div class="connection-status" id="connectionStatus">
-                        <span class="status-indicator online"></span>
-                        <span>Connected</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="content" id="content">
-                <!-- Content loaded dynamically -->
-            </div>
-
-            <footer class="footer">
-                <div class="footer-left">
-                    <span>Security Bot Dashboard</span>
-                    <span>•</span>
-                    <span>v7.0.0</span>
-                </div>
-                <div class="footer-right">
-                    <span id="footerPing">Ping: --ms</span>
-                </div>
-            </footer>
-        </main>
-    </div>
-
-    <script src="script.js"></script>
-    <script>
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const loadingScreen = document.getElementById('loadingScreen');
-                const app = document.getElementById('app');
-                if (loadingScreen) loadingScreen.style.display = 'none';
-                if (app) app.style.display = 'flex';
-            }, 1500);
-        });
-    </script>
+<body>
+<header class="topbar">
+  <button id="menuBtn" class="icon-btn">☰</button>
+  <div class="brand" id="guildName">Security Bot</div>
+  <div class="user" id="userBox"></div>
+</header>
+<aside id="sidebar" class="sidebar"><nav id="nav"></nav><a class="logout" href="/auth/logout">Logout</a></aside>
+<main id="content" class="content">
+  <div class="loading">Loading...</div>
+</main>
+<div id="saveBar" class="savebar hidden">
+  <span>گۆڕانکاری هەیە</span>
+  <button id="resetBtn" class="btn ghost">Reset</button>
+  <button id="saveBtn" class="btn primary">Save</button>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script src="/js/api.js"></script>
+<script src="/js/form.js"></script>
+<script src="/js/app.js"></script>
 </body>
 </html>
