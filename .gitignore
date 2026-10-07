@@ -1,65 +1,23 @@
-# ============================================
-# Security Bot - Git Ignore
-# ============================================
-
-# Dependencies
 node_modules/
 package-lock.json
-
-# Environment & Secrets
 .env
 .env.local
-.env.*.local
-
-# Logs
 *.log
 logs/
-bot.log
-dash.log
-
-# Backups
-*.backup
-*.backup-*
 *.bak
+*.bak-*
 *.old
 *.safe
-*.safe2
 *.before-*
-*.ready-*
-*.slash-*
 dashboard-backup-*
-
-# Runtime data
 pids/
 *.pid
-*.seed
-*.pid.lock
-
-# Data (database, cache)
 data/
 *.sqlite
-*.sqlite3
-*.db
-.mongodb/
-
-# Editor
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
 .DS_Store
-Thumbs.db
-
-# Temp
 tmp/
 temp/
-*.tmp
-
-# Build output
 dist/
 build/
-
-# Optional
-coverage/
-.nyc_output/

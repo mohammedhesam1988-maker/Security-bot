@@ -13,10 +13,10 @@
   function cmdFields() {
     return [
       { key: 'enabled',              label: 'Enabled',              type: 'boolean' },
-      { key: 'channels',             label: 'Allowed Channels',     type: 'stringArray' },
-      { key: 'disabledChannels',     label: 'Disabled Channels',    type: 'stringArray' },
-      { key: 'roles',                label: 'Allowed Roles',        type: 'stringArray' },
-      { key: 'disabledRoles',        label: 'Disabled Roles',       type: 'stringArray' },
+      { key: 'channels',             label: 'Allowed Channels',     type: "channelArray" },
+      { key: 'disabledChannels',     label: 'Disabled Channels',    type: "channelArray" },
+      { key: 'roles',                label: 'Allowed Roles',        type: "roleArray" },
+      { key: 'disabledRoles',        label: 'Disabled Roles',       type: "roleArray" },
       { key: 'users',                label: 'Allowed Users',        type: 'stringArray' },
       { key: 'disabledUsers',        label: 'Disabled Users',       type: 'stringArray' },
       { key: 'maxLimit',             label: 'Max Limit',            type: 'number' },
@@ -1284,6 +1284,159 @@
         });
         input.addEventListener('change', function () { onChange(field.key, input.value || null); });
         break;
+
+      case 'channelArray': {
+        var wrapArr = document.createElement('div');
+        wrapArr.className = 'multi-select';
+
+        var chips = document.createElement('div');
+        chips.className = 'chips';
+
+        var arrVal = Array.isArray(currentValue) ? currentValue.slice() : [];
+
+        var renderChips = function () {
+          chips.innerHTML = '';
+          if (arrVal.length === 0) {
+            var empty = document.createElement('span');
+            empty.className = 'chips-empty';
+            empty.textContent = 'No channels selected';
+            chips.appendChild(empty);
+            return;
+          }
+          arrVal.forEach(function (id, i) {
+            var found = (window.__CHANNELS__ || []).find(function (x) { return x.id === id; });
+            var name = found ? found.name : id;
+            var chip = document.createElement('span');
+            chip.className = 'chip chip-channel';
+            chip.textContent = '#' + name;
+            var rm = document.createElement('button');
+            rm.type = 'button';
+            rm.textContent = '\u00d7';
+            rm.addEventListener('click', function (e) {
+              e.preventDefault();
+              arrVal.splice(i, 1);
+              renderChips();
+              onChange(field.key, arrVal.slice());
+            });
+            chip.appendChild(rm);
+            chips.appendChild(chip);
+          });
+        };
+
+        var sel = document.createElement('select');
+        var opt0 = document.createElement('option');
+        opt0.value = '';
+        opt0.textContent = '+ Add channel';
+        sel.appendChild(opt0);
+
+        (window.__CHANNELS__ || []).forEach(function (ch) {
+          if (arrVal.indexOf(ch.id) !== -1) return;
+          var o = document.createElement('option');
+          o.value = ch.id;
+          o.textContent = '#' + ch.name;
+          sel.appendChild(o);
+        });
+
+        sel.addEventListener('change', function () {
+          if (sel.value) {
+            arrVal.push(sel.value);
+            renderChips();
+            onChange(field.key, arrVal.slice());
+            sel.value = '';
+            while (sel.options.length > 1) sel.remove(1);
+            (window.__CHANNELS__ || []).forEach(function (ch) {
+              if (arrVal.indexOf(ch.id) !== -1) return;
+              var o = document.createElement('option');
+              o.value = ch.id;
+              o.textContent = '#' + ch.name;
+              sel.appendChild(o);
+            });
+          }
+        });
+
+        renderChips();
+        wrapArr.appendChild(chips);
+        wrapArr.appendChild(sel);
+        input = wrapArr;
+        break;
+      }
+
+      case 'roleArray': {
+        var wrapRole = document.createElement('div');
+        wrapRole.className = 'multi-select';
+
+        var roleChips = document.createElement('div');
+        roleChips.className = 'chips';
+
+        var roleArr = Array.isArray(currentValue) ? currentValue.slice() : [];
+
+        var renderRoleChips = function () {
+          roleChips.innerHTML = '';
+          if (roleArr.length === 0) {
+            var empty = document.createElement('span');
+            empty.className = 'chips-empty';
+            empty.textContent = 'No roles selected';
+            roleChips.appendChild(empty);
+            return;
+          }
+          roleArr.forEach(function (id, i) {
+            var found = (window.__ROLES__ || []).find(function (x) { return x.id === id; });
+            var name = found ? found.name : id;
+            var chip = document.createElement('span');
+            chip.className = 'chip chip-role';
+            chip.textContent = '@' + name;
+            var rm = document.createElement('button');
+            rm.type = 'button';
+            rm.textContent = '\u00d7';
+            rm.addEventListener('click', function (e) {
+              e.preventDefault();
+              roleArr.splice(i, 1);
+              renderRoleChips();
+              onChange(field.key, roleArr.slice());
+            });
+            chip.appendChild(rm);
+            roleChips.appendChild(chip);
+          });
+        };
+
+        var roleSel = document.createElement('select');
+        var rOpt0 = document.createElement('option');
+        rOpt0.value = '';
+        rOpt0.textContent = '+ Add role';
+        roleSel.appendChild(rOpt0);
+
+        (window.__ROLES__ || []).forEach(function (r) {
+          if (roleArr.indexOf(r.id) !== -1) return;
+          var o = document.createElement('option');
+          o.value = r.id;
+          o.textContent = '@' + r.name;
+          roleSel.appendChild(o);
+        });
+
+        roleSel.addEventListener('change', function () {
+          if (roleSel.value) {
+            roleArr.push(roleSel.value);
+            renderRoleChips();
+            onChange(field.key, roleArr.slice());
+            roleSel.value = '';
+            while (roleSel.options.length > 1) roleSel.remove(1);
+            (window.__ROLES__ || []).forEach(function (r) {
+              if (roleArr.indexOf(r.id) !== -1) return;
+              var o = document.createElement('option');
+              o.value = r.id;
+              o.textContent = '@' + r.name;
+              roleSel.appendChild(o);
+            });
+          }
+        });
+
+        renderRoleChips();
+        wrapRole.appendChild(roleChips);
+        wrapRole.appendChild(roleSel);
+        input = wrapRole;
+        break;
+      }
+
 
       case 'stringArray':
         input = document.createElement('input');

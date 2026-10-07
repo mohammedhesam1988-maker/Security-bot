@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
 const express = require('express');
 const session = require('express-session');
 const helmet = require('helmet');
@@ -54,7 +54,7 @@ app.get('/auth/callback', async (req, res) => {
     req.session.user = { id: u.data.id, username: u.data.username, avatar: u.data.avatar };
     res.redirect('/');
   } catch (e) {
-    res.status(500).send('Login error');
+    console.error("LOGIN ERROR:", e.response?.data || e.message || e); res.status(500).send("Login error: " + (e.response?.data?.error || e.message));
   }
 });
 
@@ -85,9 +85,12 @@ app.get('/api/config', requireAuth, (req, res) => {
 
 app.put('/api/config/:section', requireAuth, (req, res) => {
   try {
-    const key = req.params.section;
+    let key = req.params.section;
     const cfg = loadConfig();
-    if (HIDDEN.includes(key) || !(key in cfg)) return res.status(404).json({ error: 'unknown section' });
+    const lowerKey = key.toLowerCase();
+    const actualKey = Object.keys(cfg).find(k => k.toLowerCase() === lowerKey);
+    if (HIDDEN.includes(key) || !actualKey) return res.status(404).json({ error: "unknown section" });
+    key = actualKey;
     const v = req.body.value;
     if (v === undefined) return res.status(400).json({ error: 'value missing' });
     if (Array.isArray(cfg[key]) !== Array.isArray(v) || typeof cfg[key] !== typeof v)

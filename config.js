@@ -1,5 +1,5 @@
 module.exports = {
-"token": "",
+    "token": "",
     "prefix": "!",
     "ownerId": "",
     "general": {
